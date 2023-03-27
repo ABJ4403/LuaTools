@@ -1,6 +1,6 @@
 --[[
 
-	ABJ4403's Lua Tools v1.7
+	ABJ4403's Lua Tools v1.8
 	Copyright (C) 2022 ABJ4403
 	Features:
 	+ Simple, no bloat (Unlike others with nonsense blingy shiit, and arbitrary sleep to slow down).
@@ -39,7 +39,7 @@
 			+ Remove blocker (By Daddyaaaaaaa)
 		+ Run script in isolated environment.
 			+ Powered by VirtGG (by @ABJ4403) and Script Compiler 3.7 (by ???).
-			+ Protect your device from unwanted script modification (os.execute,os.remove,gg.makeRequest).
+			+ Protect your device from unwanted script modification (os.execute,os.remove,gg.makeRequest,etc).
 			+ Grab a password from basic pwall script (untested).
 			+ Run script with different version/package name.
 		+ Remove BigLASM (Beta).
@@ -79,8 +79,9 @@ local function randstr(len)
 	return e
 end
 --XOR encryption
+local dec_XOR2 = function(iv,key)local i,iv_,key_=0,{string.byte(iv,0,-1)},{string.byte(key,0,-1)} r=iv:gsub(".",function()i=i+1 return string.char(iv_[i]~key_[i])end)return r end
 local dec_XOR = (function(key)return'(iv)local n,iv,key=1,{string.byte(iv,0,-1)},{string.byte([==['..key..']==],0,-1)}for i=1,#iv do iv[i]=string.char(iv[i]~key[n])n=(i%#key)+1 end return table.concat(iv)'end)
-local enc_XOR = (function(key)
+local enc_XOR = function(key)
 	local key,_key,n,str = key
 	dec_XOR = dec_XOR(key)
 	key = {string.byte(key,0,-1)}
@@ -93,7 +94,7 @@ local enc_XOR = (function(key)
 		end
 		return 'decode([==['..table.concat(str)..']==])'
 	end
-end)(randstr())
+end
 io.readFile = function(path,openMode,readMode)
 	local openMode = openMode or 'r'
 	local readMode = readMode or '*a'
@@ -129,9 +130,10 @@ local sleep,toast,alert = gg.sleep,gg.toast,gg.alert
 -- if you encrypt this script, then you can't customize stuff here.
 -- you will need a code editor (preferably the one that has color-coding & code-folding, like Acode), and Lua knowledge for customizing these stuff below...
 local cfg = {
-	VERSION = "1.7", -- you can ignore this, its just for defining encryptor version :)
+	VERSION = "1.8", -- you can ignore this, its just for defining encryptor version :)
 	enc = enc_XOR,
-	dec = dec_XOR,
+	xdenc = dec_XOR2, -- this means XOR Enc.. Dec..
+	dec_wrap = dec_XOR,
 	obfModSettings = {
 		minGGVer = gg.VERSION, -- minimal GG version required
 		ggPkg = "com.catch.me.if.you.can.gg", -- what only gg package script will run
@@ -156,6 +158,7 @@ local cfg = {
 		}
 	}
 }
+cfg.enc = enc_XOR(randstr()) -- prevent possible bug
 -- Put your obfuscation module here (name can be anything but begins with A-Z_, but the value is in string. I recommend putting lightweight to heaviest order, like quick-check on top, log-spam on bottom)
 local obfMod = {
 	A_EncryptorSignature = "local _=[[\n\n——————————————————————————————————————————————————\n|\n|  🛡 Encrypted by ABJ4403's Lua encryptor v"..cfg.VERSION.." (https://github.com/ABJ4403/LuaToolbox)\n|  Features:\n|  + Simple, no bloat (Unlike others with nonsense blingy shiit, and arbitrary waiting).\n|  + Always FOSS (Free and Open-source), Licensed under GPL v3\n|  + Easy to understand.\n|  + API call encryption.\n|  + High performance (No arbitrary slowdown, great optimization, automagic local variable use, isolated obfuscator modules to make sure global variables not polluted).\n|  + optional Hard-Password requirement (with XOR encryption, we can use the password itself as a decryption key :) TODO...\n|  + Not only \"Free as in Price\", but also \"Free as in Freedom\". built-in hard-coded configuration allows you to tinker which encryption/obfuscation module suits your needs :D\n|  + Respects the user, both the author and the end user.\n|\n|  If you trying to open this encrypted file,\n|  well uhh... GL to even decrypt this XD (if you do)\n|  Otherwise if you think the encryptor is not safe, Don't worry, the encryptor is open-source :D\n|  Go to https://github.com/ABJ4403/lua_gg_stuff/lua_encryptor for the encryptor source-code :D\n|\n——————————————————————————————————————————————————\n\n\n]]",
@@ -167,7 +170,7 @@ local obfMod = {
 	G_RestrictPkgs       = 'for _,v in ipairs{"sstool.only.com.sstool","com.hckeam.mjgql"} do if gg.isPackageInstalled(v)or gg.PACKAGE == v then os.exit(print("'..cfg.obfModSettings.text.failDeniedPkgs..'"..v))end end',
 	H_NoIllegalMod       = 'if string.rep("a",2)~="aa" then os.exit(print("'..cfg.obfModSettings.text.failIllegalMod..'"))end',
 	I_NoRename           = 'local fileName="${FILE_NAME}" if gg.getFile():gsub("^/.+/","") ~= fileName then print("'..cfg.obfModSettings.text.failRenamed..'"..fileName)os.exit()end',
-	J_Password           = 'local CH=gg.prompt({"'..cfg.obfModSettings.text.inputPass..'"},nil,{"text"})if not CH or CH[1] ~= '..cfg.enc(cfg.obfModSettings.scriptPW)..' then return print("'..cfg.obfModSettings.text.failInvalidPW..'")end CH=nil', -- TODO: add some sort of way to save the password to config file in external cache so it wont ask password continously everytime you run the script
+	J_Password           = 'local CH=gg.prompt({"'..cfg.obfModSettings.text.inputPass..'"},nil,{"text"})if not CH or decode(CH[1]) ~= "${HASHED_PW}" then return print("'..cfg.obfModSettings.text.failInvalidPW..'")end CH=nil', -- TODO: add some sort of way to save the password to config file in external cache so it wont ask password continously everytime you run the script
 	K_Welcome            = [[gg.toast("🛡 Encrypted by ABJ4403's Lua encryptor v]]..cfg.VERSION..[[. Please wait...")]],
 	L_AntiSSTool				 = [[while nil do local i={}if(i.i)then;i.i=(i.i(i))end end]],
 	M_HBXVpnObf          = [[while nil do local srE6h={nil,-nil % -nil,nil,-nil,nil,nil % -nil,-nil % nil,-nil}if #srE6h<0 then break end if srE6h[#srE6h]<0 then break end if srE6h[-nil] ~= #srE6h & ~srE6h then srE6h[#srE6h]=srE6h[-nil]()end if #srE6h<nil then srE6h[#srE6h]=srE6h[-nil%nil]()end goto X1 if nil or 0 then return end::X0::Rias()::X1::function Rias()goto X2 if nil or 0 then return end::X3::Rias()::X2::function Issei()end goto X3 end goto X0 for i=1,0 do TQUILA353="TQUILA1"end for i=1,0 do if nil then TQUILA334="TQUILAV1"end end if nil then if true then else goto S4dFl end if nil then else goto S4dFl end if nil then else goto S4dFl end::S4dFl::end end]],
@@ -510,11 +513,6 @@ function wrapper_secureRun()
 		do -- Prepare isolated container
 			toast("[i] Preparing isolated container...")
 			print("[i] Preparing isolated container...")
-
-
-
-
-
 		--Prepare fricked variables
 			local err
 			local Repl = {
@@ -721,11 +719,6 @@ function wrapper_secureRun()
 					end
 				end,'',1)
 			end
-
-
-
-
-
 			toast("[i] Running script In isolated container...")
 			print("[i] Running "..cfg.obfModSettings.fileChoice.." In isolated container...")
 			collectgarbage"collect"
@@ -733,21 +726,11 @@ function wrapper_secureRun()
 				if CH[2]and ScriptWrapper then ScriptWrapper()end
 				ScriptResult,err = ScriptResult()
 			end
-
-
-
-
-
 		--Cleanup some fricked variables
 			debug.sethook(nil,'',1)
 			for i,v in pairs(Repl) do
 				_G[i] = v
 			end
-
-
-
-
-
 		end
 		print("--")
 		print(ScriptResult,err)
@@ -756,11 +739,12 @@ function wrapper_secureRun()
 end
 function encryptLua()
 	-- log the startup
-	print("[+] Encryption initialized ("..cfg.dec..").")
+	print("[+] Encryption initialized ("..cfg.dec_wrap..").")
 
 	-- Wrap the decryptor script
 	print("[i] Wrapping decryptor...")
-	cfg.dec = "local function decode"..cfg.dec.." end\n"
+	cfg.dec_wrap = "local function decode"..cfg.dec_wrap.." end\n"
+	cfg.enc = enc_XOR(cfg.obfModSettings.scriptPW) -- add key
 
 	-- Put the input file content to buffer
 	print("[i] Reading file contents to buffer...")
@@ -790,6 +774,7 @@ function encryptLua()
 	print("[i] Configuring Obfuscations...")
 	collectgarbage"collect"
 	obfMod.I_NoRename = obfMod.I_NoRename:gsub('${FILE_NAME}',cfg.obfModSettings.fileChoice:gsub('^/.+/','')..'.enc.lua')
+	obfMod.J_Password = obfMod.J_Password:gsub('${HASHED_PW}',cfg.xdenc(cfg.obfModSettings.scriptPW))
 
 	-- Append obfuscation module before script starts, and put decryptor at very beginning (applied in reverse order)
 	print("[i] Applying Obfuscations... (sorted Z-A/bottom-top)")
@@ -799,9 +784,10 @@ function encryptLua()
 		DATA = 'do '..v..' end\n'..DATA
 	end
 	print('———')
-	DATA = cfg.dec..DATA
+	DATA = cfg.dec_wrap..DATA
 
 	-- Encryption done, "Compile" the file (in a hacky way lol)
+	cfg.enc = enc_XOR -- Restore original function
 	print("[i] Compiling...")
 	collectgarbage"collect"
 	io.writeFile(cfg.obfModSettings.fileChoice..".debug.lua",DATA) -- debugging lol
