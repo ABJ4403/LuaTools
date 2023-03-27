@@ -1,7 +1,7 @@
 --[[
 
-	ABJ4403's Lua Tools v2.1
-	Copyright (C) 2022-2023 ABJ4403
+	ABJ4403's Lua Toolbox
+	(C) 2022-2023 ABJ4403
 
 	WARNING: Sharing this script in any encrypted form (either by self-encrypt, or encrypted by other tools) is violating GPL v3 license,
 	and restricts users freedom of changing the hard-coded configuration.
@@ -32,35 +32,37 @@ local enc_wrap_XOR = function(key)
 		for i=1,#str do
 			str[i] = string.char(str[i] ~ key[(i % #key) + 1])
 		end
-		return 'decode([==['..table.concat(str)..']==])'
+		return '(decode([==['..table.concat(str)..']==]))' -- the parenthesis around decode function is to prevent possible parsing error in case like: `return'a'` > `returndecode(..)`
 	end
 end
 --————————————————————————————————--
 
 
 
---— Hard-coded Configuration —————--
+--— Configuration ————————————————--
 -- Allow user freedom of changing whatever they want
--- Please DO NOT encrypt this script, because we (more of 'i') like to use hard-coded configuration like below
+-- Please DO NOT encrypt this script, because we like to change configuration like below
 -- if you encrypt this script, then you can't customize stuff here.
 -- you will need a code editor (preferably the one that has color-coding & code-folding, like Acode), and Lua knowledge for customizing these stuff below...
 local cfg = {
-	VERSION = "2.1", -- you can ignore this, its just for defining script version :)
+	VERSION = "2.2", -- you can ignore this, its just for defining script version :)
 	enc = enc_wrap_XOR, -- useless anyway lol, handled on the bottom
 	xdenc = xdenc_XOR, -- this means XOR Enc.. Dec..
 	dec_wrap = dec_wrap_XOR,
 	scriptPath = gg.getFile():gsub('.lua$',''), -- strip the .lua for .conf and stuff,
 	fileChoice = '/sdcard/Notes/test', -- dummy, replaced whenever any file is selected within the GUI
+	debugMode = true,
 	obfModSettings = {
 		minGGVer = gg.VERSION, -- GG version required
 		minGGBuildVer = gg.BUILD, -- minimal GG build version required
 		allowNewGGBuildVer = true, -- whether to allow newer GG version or not (uses gg.BUILD variable only)
-		ggPkg = "com.catch.me.if.you.can.gg", -- what only gg package script will run
+		ggPkg = "", -- what only gg package script will run
 		appPkg = "com.android.calculator", -- what only target package script will run
 		scriptExpiry = "20301111", -- YYYYMMDD order
 		scriptPW = "__P@$$w0rd123__", -- script password
+		stripAnnotations = false,
 		savePW = true, -- when enabled, the hashed password (not the actual pw) will be exported to a file with '.lt.cfg' extension
-		encryptStrings = true,
+		encryptStrings = false,
 		encryptTables = true,
 		text = {
 			failAppPkgInvalid = "[PkgScanner] This cheat is only allowed to run on \"..GGAppPkg..\", and the target app package name is \"..gg.getTargetPackage()",
@@ -73,14 +75,15 @@ local cfg = {
 			failLogDetected   = "[DumpDetector] Usage of Logging detected! this may be caused by slow device, if you didn't expect this, please contact the script author.",
 			failInvalidPW     = "[Auth] Invalid Password!",
 			failInvalidPWFile = "[Auth] Invalid Password hash stored in LuaTools configuration!",
-			failRenamed       = "[FileWatcher] Renaming detected! sorry but you need to rename the script back to: ",
-			promoteYourself   = "  Follow me!\n  GitHub: https://github.com/ABJ4403\n  YouTube: https://youtube.com/@AyamGGoreng",
+			failRenamed       = "[FileWatcher] Renaming detected! sorry but you need to rename the script back to:",
+			errLTCfgFile			= "[Auth] Error when trying to execute LuaTools configuration file:",
+			promoteYourself   = "\tFollow me!\n\tGitHub: https://github.com/ABJ4403\n\tYouTube: https://youtube.com/@AyamGGoreng",
 			inputPass         = "[Auth] Input Password:",
 			warnPeeking       = "[NoPeek] Caught peeking values",
 		}
 	}
 }
--- Put your obfuscation module here (name can be anything but begins with A-Z_, but the value is in function that returns string. I recommend putting lightweight to heaviest order, like quick-check on top, log-spam on bottom)
+-- Put your obfuscation module here (sorted by name)
 local obfMod = {
 	A_EncryptorSignature = function()return "local _=[[\n\n——————————————————————————————————————————————————\n|\n|  🛡 Encrypted by ABJ4403's Lua encryptor v"..cfg.VERSION.." (https://github.com/ABJ4403/LuaToolbox)\n|  Features:\n|  + Simple, no bloat (Unlike others with nonsense blingy shiit, and arbitrary waiting).\n|  + Always FOSS (Free and Open-source), Licensed under GPL v3\n|  + Easy to understand.\n|  + API call encryption.\n|  + High performance (No arbitrary slowdown, great optimization, automagic local variable use, isolated obfuscator modules to make sure global variables not polluted).\n|  + optional Hard-Password requirement (with XOR encryption, we can use the password itself as a decryption key :) TODO...\n|  + Not only \"Free as in Price\", but also \"Free as in Freedom\". built-in hard-coded configuration allows you to tinker which encryption/obfuscation module suits your needs :D\n|  + Respects the user, both the author and the end user.\n|\n|  If you trying to open this encrypted file,\n|  well uhh... GL to even decrypt this XD (if you do)\n|  Otherwise if you think the encryptor is not safe, Don't worry, the encryptor is open-source :D\n|  Go to https://github.com/ABJ4403/lua_gg_stuff/lua_encryptor for the encryptor source-code :D\n|\n——————————————————————————————————————————————————\n\n\n]]"end,
 	B_PromoteYourself    = function()return "local _=[[\n\n"..cfg.obfModSettings.text.promoteYourself.."\n\n]]"end,
@@ -123,20 +126,20 @@ local obfMod = {
 			local pwCode = 'askPw=function()CH=gg.prompt({"'..cfg.obfModSettings.text.inputPass..'"},nil,{"text"})if not CH or decode(CH[1])~=pwHash then os.exit(print("'..cfg.obfModSettings.text.failInvalidPW..'"))end '
 			if cfg.obfModSettings.savePW then
 			--add pw file handler
-				pwCode = 'local ltFile,ltOutput=gg.getFile():gsub("%.enc%.lua$",".lua"):gsub("%.lua$",".lt.cfg")'..pwCode..' io.open(ltFile,"w"):write([====[-- ABJ4403 LuaTools Encryptor configuration\n-- Please do not edit this file just in case there is an encoding error while doing it\nIf you really want to edit this file, use a good code editor that respects the encoding of a file\nreturn {\n--Password hash (to avoid typing the same password again)\n	password_hash = "]====]..pwHash..[====["\n}]====]):close()end ltOutput=loadfile(ltFile)if ltOutput then ltOutput=ltOutput()if type(ltOutput)~="table"or ltOutput.password_hash~=pwHash then print("'..cfg.obfModSettings.text.failInvalidPWFile..'")askPw()end else askPw()end'
+				pwCode = 'local ltFile,ltOutput=gg.getFile():gsub("%.enc%.lua$",".lua"):gsub("%.lua$",".lt.cfg")'..pwCode..' io.open(ltFile,"w"):write([====[-- ABJ4403 LuaTools Encryptor configuration\n-- Please do not edit this file just in case there is an encoding error while doing it\n-- If you really want to edit this file, use a good code editor that respects the encoding of a file\nreturn {\n--Password hash (to avoid typing the same password again)\n	password_hash = "]====]..pwHash..[====["\n}]====]):close()end ltOutput,err=loadfile(ltFile)if ltOutput and not err then ltOutput=ltOutput()if type(ltOutput)~="table"or ltOutput.password_hash~=pwHash then print("'..cfg.obfModSettings.text.failInvalidPWFile..'")askPw()end else if err then print("'..cfg.obfModSettings.text.errLTCfgFile..'",err)end askPw()end'
 			else
 			--just ask pw
 				pwCode = pwCode..'end askPw()'
 			end
-			pwCode = 'local pwHash,askPw,CH="'..cfg.xdenc(cfg.obfModSettings.scriptPW,cfg.obfModSettings.pwHash)..'" '..pwCode..' CH,askPw,pwHash=nil,nil,nil' -- code to clear everything
+			pwCode = 'local pwHash,askPw,CH,err="'..cfg.xdenc(cfg.obfModSettings.scriptPW,cfg.obfModSettings.pwHash)..'" '..pwCode..' CH,askPw,pwHash,err=nil,nil,nil,nil' -- code to clear everything
 			return pwCode
 		end
 	end,
 	N_Welcome            = function()return [[gg.toast("🛡 Encrypted by ABJ4403's Lua encryptor v]]..cfg.VERSION..[[. Please wait...")]]end,
 	O_AntiLoad           = function()return 'local load,str=load,function()local _=nil end for i=1,1e3 do load(str)end'end,
 	P_NoPeek             = function()return 'gg.searchNumber=(function()local ggSearchNumber=gg.searchNumber return function(...)if gg.isVisible()then gg.setVisible(false)gg.clearList()print("'..cfg.obfModSettings.text.warnPeeking..'")end ggSearchNumber(...)if gg.isVisible()then gg.setVisible(false)gg.clearList()print("'..cfg.obfModSettings.text.warnPeeking..'")end end end)()'end,
-	Q_SpamLog            = function()return 'local osTime,debugTraceback,LOG,Time1,Time2=os.time,debug.traceback,string.char(0,4,8,255):rep(1000)Time1=osTime()for i=1,2000 do debugTraceback(1,nil,LOG)end Time2=osTime()if Time2-Time1>1 then os.exit(print("'..cfg.obfModSettings.text.failHookDetected..'"))end osTime,debugTraceback,Time1,Time2,LOG=nil,nil,nil,nil,nil'end,
-	R_BigLASM            = function()return "local "..('_="<<===---- Chunk Obfuscator ----===>>" '):rep(30000)..('goto _ '):rep(30000)..("(function()end)() "):rep(30000)..'::_:: _=nil'end, -- Makes assembly file really big. Chunk obfuscator?
+	Q_SpamLog            = function()return 'local osTime,debugTraceback,LOG,Time1,Time2=os.time,debug.traceback,string.char(0,4,8,255):rep(1e3)Time1=osTime()for i=1,2e3 do debugTraceback(1,nil,LOG)end Time2=osTime()if Time2-Time1>1 then os.exit(print("'..cfg.obfModSettings.text.failLogDetected..'"))end osTime,debugTraceback,Time1,Time2,LOG=nil,nil,nil,nil,nil'end,
+--R_BigLASM            = function()return "local "..('_="<<===---- Chunk Obfuscator ----===>>" '):rep(30000)..('goto _ '):rep(30000)..("(function()end)() "):rep(30000)..'::_:: _=nil'end, -- Makes assembly file really big. Chunk obfuscator?
 --x_cHeaphumanVerify   = function()return [[local tmp=math.random(1000,9999)local CH=gg.prompt({"cHeapuman verification\n"..tmp},nil,{"text"})if not CH or CH[1] ~= tmp then return print("'..cfg.obfModSettings.text.failInvalidPW..'")end CH=nil]]end,
 }
 -- Put your deobfuscation patches here (name can be whatever. when you modify below, you might want to modify `wrapper_patches()` if you add/remove entries in here)
@@ -154,8 +157,8 @@ local deobfPatch = {
 		{'LOADK v%d+ "[^\n]*"\nGETTABUP v%d+ u0 "gg"\nGETTABLE v%d+ v%d+ "getFile"\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSELF v%d+ v%d+ "gsub"\nLOADK v%d+ "%^/%.%+/"\nLOADK v%d+ ""\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nEQ 1 v%d+ v%d+\nJMP :goto_%d+  ; %+8 ↓\nGETTABUP v%d+ u0 "print"\nLOADK v%d+ "[^\n]*"\nMOVE v%d+ v%d+\nCONCAT v%d+ v%d+%.%.v%d+\nCALL v%d+%.%.v%d+\nGETTABUP v%d+ u0 "os"\nGETTABLE v%d+ v%d+ "exit"\nCALL v%d+%.%.v%d+\n:goto_%d+',''},
  -- Spam log (outdated)
 		{'GETTABUP v%d+ u0 "gg"\nGETTABLE v%d+ v%d+ "clearResults"\nCALL v%d+%.%.v%d+\nNEWTABLE v%d+ 0 0\nGETTABUP v%d+ u0 "string"\nGETTABLE v%d+ v%d+ "char"\nLOADK v%d+ 0\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSELF v%d+ v%d+ "rep"\nLOADK v%d+ 1000000\nCALL v%d+%.%.v%d+ SET_TOP\nSETLIST v%d+ 1\nLOADK v%d+ 1\nLOADK v%d+ 100\nLOADK v%d+ 1\n; %.local v%d+ "%(for index%)"\n; %.local v%d+ "%(for limit%)"\n; %.local v%d+ "%(for step%)"\n; %.local v%d+ "%(for iterator%)"\nFORPREP v%d+ :goto_%d+  ; %+4 ↓\n:goto_%d+\nGETTABUP v%d+ u0 "gg"\nGETTABLE v%d+ v%d+ "refineNumber"\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+\n:goto_%d+\nFORLOOP v%d+ :goto_%d+  ; %-5 ↑\n; %.end local v%d+ "%(for index%)"\n; %.end local v%d+ "%(for limit%)"\n; %.end local v%d+ "%(for step%)"\n; %.end local v%d+ "%(for iterator%)"',''},
- -- HackerBoyXVPN Obfuscation (outdated)
-		{':goto_%d+\nLOADBOOL v%d+ 0\nTEST v%d+ 0\nJMP :goto_%d+  ; %+86 ↓\nNEWTABLE v%d+ 8 0\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nMOD v%d+ v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nMOD v%d+ nil v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nMOD v%d+ v%d+ nil\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nSETLIST v%d+%.%.v%d+ 1\nLEN v%d+ v%d+\nLT 1 v%d+ 0\nJMP :goto_%d+  ; %+66 ↓\nLEN v%d+ v%d+\nGETTABLE v%d+ v%d+ v%d+\nLT 1 v%d+ 0\nJMP :goto_%d+  ; %+62 ↓\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nGETTABLE v%d+ v%d+ v%d+\nLEN v%d+ v%d+\nBNOT v%d+ v%d+\nBAND v%d+ v%d+ v%d+\nEQ 1 v%d+ v%d+\nJMP :goto_%d+  ; %+6 ↓\nLEN v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nGETTABLE v%d+ v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSETTABLE v%d+ v%d+ v%d+\n:goto_%d+\nLEN v%d+ v%d+\nLT 0 v%d+ nil\nJMP :goto_%d+  ; %+11 ↓\nLEN v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nMOD v%d+ v%d+ nil\nGETTABLE v%d+ v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSETTABLE v%d+ v%d+ v%d+\nJMP :goto_%d+  ; %+3 ↓\nRETURN  ; garbage\n:goto_%d+\nGETTABUP v%d+ u0 "Rias"\nCALL v%d+%.%.v%d+\n:goto_%d+\nCLOSURE v%d+ F2\nSETTABUP u0 "Rias" v%d+\nJMP :goto_%d+  ; %-5 ↑\nLOADK v%d+ 1 ; garbage\nLOADK v%d+ 0 ; garbage\nLOADK v%d+ 1 ; garbage\n; %.local v%d+ "%(for index%)"\n; %.local v%d+ "%(for limit%)"\n; %.local v%d+ "%(for step%)"\n; %.local v%d+ "%(for iterator%)"\nFORPREP v%d+ :goto_%d+  ; %+1 ↓ ; garbage\n:goto_%d+\nSETTABUP u0 "TQUILA353" "TQUILA1" ; garbage\n:goto_%d+\nFORLOOP v%d+ :goto_%d+  ; %-2 ↑\n; %.end local v%d+ "%(for index%)"\n; %.end local v%d+ "%(for limit%)"\n; %.end local v%d+ "%(for step%)"\n; %.end local v%d+ "%(for iterator%)" ; garbage\nLOADK v%d+ 1 ; garbage\nLOADK v%d+ 0 ; garbage\nLOADK v%d+ 1 ; garbage\n; %.local v%d+ "%(for index%)"\n; %.local v%d+ "%(for limit%)"\n; %.local v%d+ "%(for step%)"\n; %.local v%d+ "%(for iterator%)"\nFORPREP v%d+ :goto_%d+  ; %+4 ↓ ; garbage\n:goto_%d+\nLOADNIL v%d+%.%.v%d+ ; garbage\nTEST v%d+ 0 ; garbage\nJMP :goto_%d+  ; %+1 ↓ ; garbage\nSETTABUP u0 "TQUILA334" "TQUILAV1" ; garbage\n:goto_%d+\nFORLOOP v%d+ :goto_%d+  ; %-5 ↑\n; %.end local v%d+ "%(for index%)"\n; %.end local v%d+ "%(for limit%)"\n; %.end local v%d+ "%(for step%)"\n; %.end local v%d+ "%(for iterator%)" ; garbage\nLOADNIL v%d+%.%.v%d+ ; garbage\nTEST v%d+ 0 ; garbage\nJMP :goto_%d+  ; %-76 ↑ ; garbage\nJMP :goto_%d+  ; %+1 ↓ ; garbage\nJMP :goto_%d+  ; %-78 ↑ ; garbage\n:goto_%d+\nLOADNIL v%d+%.%.v%d+ ; garbage\nTEST v%d+ 0 ; garbage\nJMP :goto_%d+  ; %-81 ↑ ; garbage\nJMP :goto_%d+  ; %+1 ↓ ; garbage\nJMP :goto_%d+  ; %-83 ↑ ; garbage\n:goto_%d+\nLOADNIL v%d+%.%.v%d+ ; garbage\nTEST v%d+ 0 ; garbage\nJMP :goto_%d+  ; %-86 ↑ ; garbage\nJMP :goto_%d+  ; %-87 ↑ ; garbage\nJMP :goto_%d+  ; %-88 ↑ ; garbage\nJMP :goto_%d+  ; %-89 ↑ ; garbage\n:goto_%d+',''},
+ -- HackerBoyXVPN Obfuscation (works)
+		{'LOADBOOL v%d+ 0\nTEST v%d+ 0\nJMP :goto_%d+  ; %+86 ↓\nNEWTABLE v%d+ 8 0\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nMOD v%d+ v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nSETLIST v%d+%.%.v%d+ 1\nLEN v%d+ v%d+\nLT 1 v%d+ 0\nJMP :goto_%d+  ; %+66 ↓\nLEN v%d+ v%d+\nGETTABLE v%d+ v%d+ v%d+\nLT 1 v%d+ 0\nJMP :goto_%d+  ; %+62 ↓\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nGETTABLE v%d+ v%d+ v%d+\nLEN v%d+ v%d+\nEQ 1 v%d+ v%d+\nJMP :goto_%d+  ; %+6 ↓\nLEN v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nGETTABLE v%d+ v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSETTABLE v%d+ v%d+ v%d+\n:goto_%d+\nLEN v%d+ v%d+\nLT 0 v%d+ nil\nJMP :goto_%d+  ; %+11 ↓\nLEN v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nGETTABLE v%d+ v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSETTABLE v%d+ v%d+ v%d+\nJMP :goto_%d+  ; %+3 ↓\n:goto_%d+\nGETTABUP v%d+ u0 "obf_P3oU"\nCALL v%d+%.%.v%d+\n:goto_%d+\nCLOSURE v%d+ F%d+\nSETTABUP u0 "obf_P3oU" v%d+\nJMP :goto_%d+  ; %-5 ↑\n:goto_%d+\n',''},
 	},
 	RemoveLasmBlock = {
  -- Original by SwinX Tools. slightly modified to work though...
@@ -297,12 +300,12 @@ BNOT v1 v1 ~a
 --— Core functions ———————————————--
 function MENU()
 	local CH = gg.choice({
-		"1. Encrypt Lua",
-		"2. (De)compile Lua",
-		"3. (Dis)assemble Lua",
-		"4. Fix corrupted Lua header",
-		"5. Patches to decrypt files",
-		"6. Run script in isolated container (uses VirtGG)",
+		"🔐 1. Encrypt Lua",
+		"🔨 2. (De)compile Lua",
+		"⛏️ 3. (Dis)assemble Lua",
+		"🔧 4. Fix corrupted Lua header",
+		"🩹️ 5. Patches to decrypt files",
+		"📦 6. Run script in isolated container (uses VirtGG)",
 		"__about__",
 		"__exit__",
 	},nil,"ABJ4403's Lua toolbox "..cfg.VERSION)
@@ -325,6 +328,7 @@ function MENU_about()
 		"Features",
 		"License",
 		"Credits",
+		"Encryption test",
 		"__back__"
 	},nil,"ABJ4403's Lua toolbox "..cfg.VERSION)
 	if CH == 1 then
@@ -390,120 +394,141 @@ You are NOT ALLOWED TO:
 - Include it in your project.
 - Using the name "VirtGG".
 All rights reserved.]]) MENU_about()
-	elseif CH == 4 then gg.alert("Credits:\n• ABJ4403 - Original creator.\n• Veyron, HBXVPN - Obfuscation codes.\n• ??? - For some Script Compiler 3.7 code.\n• SwinXTools - for Remove LASM Block deobfuscation codes.\n• Daddyaaaaaaa - for Remove blocker 1 deobfuscation codes.\n• LuaGGEG, Angela, MafiaWar - for Remove BigLASM code.") MENU_about()
-	elseif CH == 5 then CH = nil MENU() end
+	elseif CH == 4 then gg.alert("Credits:\n• ABJ4403 - Original creator.\n• Veyron, HBXVPN - Obfuscation codes.\n• Enyby - For some portion of Script Compiler 3.7 source codes (specifically the dump input field).\n• SwinXTools - for Remove LASM Block deobfuscation codes.\n• Daddyaaaaaaa - for Remove blocker 1 deobfuscation codes.\n• LuaGGEG, Angela, MafiaWar - for Remove BigLASM code.") MENU_about()
+	elseif CH == 5 then gg.alert([=====[ ——— Encryption test ———
+Texts below shouldn't look jumbled up.
+
+Encrypted table queries test:
+- gg.searchNumber(0)
+- gg.getResults()
+
+Anti exit detection test:
+- os.exit()
+
+String encryption test:
+- 'Hello world!'
+- \"Hello world!\"
+- [[Hello world!]]
+- [==[Hello world!]==]
+
+ ——— End of encryption test ———]=====]) MENU_about()
+	elseif CH == 6 then CH = nil MENU() end
 end
 
 function wrapper_encryptLua()
 	local CH = gg.prompt(
 	{
-		'📂️ Input File (make sure the extension is .lua):',
-		'🔀️ Encrypt strings (Quirky)',
+		'📂 Input File (make sure the extension is .lua):', -- 1
+		'🧹 Strip annotations (ONLY enable if you encountered an Error and your script has Annotations/Comments --[[like this]])',
+		'🔀️ Encrypt strings (Experimental, possible parsing error could happen)',
 		'🔀️ Encrypt table queries (rarely quirky)',
-		'🔐 ️Password:',
+		'🔐 ️Password:', -- 5
 		'🔐️ Only ask password for once',
 		'🗓️ Script Expiry Date (in YYYYMMDD format)',
 		'⚙️ GG package name',
 		'⚙️ GG target package name',
-		'⚙️ GG version requirement',
+		'⚙️ GG version requirement', -- 10
 		'⚙️ Minimum GG build version requirement',
 		'⚙️ Allow newer versions (only works with build number)',
-		'===== ADVANCED OPTIONS: =====\n\n\n\n\n💬️️ Promotional text (eg. Follow, Sub to YT channel), shown in Lua binary',
+		'===== ADVANCED OPTIONS: =====\n\n\n\n\n💬️️ Promotional text (eg. Follow, Sub to YT channel), shown in Lua binary', -- 13
 		'💬️️ Ask password:',
-		'💬️️ Wrong password:',
+		'💬️️ Wrong password:', -- 15
 		'💬️️ Target Package Invalid:',
 		'💬️️ Expired message:',
 		'💬️️ Denied packages:',
 		'💬️️ Wrong GG Version:',
-		'💬️️ GG Version below:',
+		'💬️️ GG Version below:', -- 20
 		'💬️️ Hook Detected:',
 		'💬️️ Illegal Modification:',
 		'💬️️ Log Detected:',
 		'💬️️ Renamed:',
-		'💬️️ Warn Value Peeking:',
+		'💬️️ Warn Value Peeking:', --25
 	},
 	{
-		cfg.fileChoice,
+		cfg.fileChoice,-- 1
+		cfg.obfModSettings.stripAnnotations,
 		cfg.obfModSettings.encryptStrings,
 		cfg.obfModSettings.encryptTables,
-		cfg.obfModSettings.scriptPW,
+		cfg.obfModSettings.scriptPW, -- 5
 		cfg.obfModSettings.savePW,
 		cfg.obfModSettings.scriptExpiry,
 		cfg.obfModSettings.ggPkg,
 		cfg.obfModSettings.appPkg,
-		cfg.obfModSettings.minGGVer,
+		cfg.obfModSettings.minGGVer, -- 10
 		cfg.obfModSettings.minGGBuildVer,
 		cfg.obfModSettings.allowNewGGBuildVer,
 		--
 		cfg.obfModSettings.text.promoteYourself,
 		cfg.obfModSettings.text.inputPass,
-		cfg.obfModSettings.text.failInvalidPW,
+		cfg.obfModSettings.text.failInvalidPW, -- 15
 		cfg.obfModSettings.text.failAppPkgInvalid,
 		cfg.obfModSettings.text.failDatePassed,
 		cfg.obfModSettings.text.failDeniedPkgs,
 		cfg.obfModSettings.text.failGGPkgInvalid,
-		cfg.obfModSettings.text.failGGVerBelow,
+		cfg.obfModSettings.text.failGGVerBelow, -- 20
 		cfg.obfModSettings.text.failHookDetected,
 		cfg.obfModSettings.text.failIllegalMod,
 		cfg.obfModSettings.text.failLogDetected,
 		cfg.obfModSettings.text.failRenamed,
-		cfg.obfModSettings.text.warnPeeking,
+		cfg.obfModSettings.text.warnPeeking, -- 25
 	},
 	{
-		'file',
+		'file', -- 1
 		'checkbox',
 		'checkbox',
-		'text',
+		'checkbox',
+		'text', -- 5
 		'checkbox',
 		'text',
 		'text',
 		'text',
-		'text',
+		'text', -- 10
 		'text',
 		'checkbox',
 		--
 		'text',
 		'text',
+		'text', -- 15
 		'text',
 		'text',
 		'text',
 		'text',
+		'text', -- 20
 		'text',
 		'text',
 		'text',
 		'text',
-		'text',
-		'text',
-		'text',
+		'text', -- 25
 	}
 	);
 	if CH and CH[1] then
 		gg.toast("Encrypting, Please wait... this will take maximum of couple seconds")
 		cfg.fileChoice = CH[1]:gsub(".lua$",'')
-		cfg.obfModSettings.encryptStrings = CH[2]
-		cfg.obfModSettings.encryptTables = CH[3]
-		cfg.obfModSettings.scriptPW = CH[4]
-		cfg.obfModSettings.savePW = CH[5]
-		cfg.obfModSettings.scriptExpiry = CH[6]
-		cfg.obfModSettings.ggPkg = CH[7]
-		cfg.obfModSettings.appPkg = CH[8]
-		cfg.obfModSettings.minGGVer = CH[9]
-		cfg.obfModSettings.minGGBuildVer = CH[10]
-		cfg.obfModSettings.allowNewGGBuildVer = CH[11]
+		cfg.obfModSettings.stripAnnotations = CH[2]
+		cfg.obfModSettings.encryptStrings = CH[3]
+		cfg.obfModSettings.encryptTables = CH[4]
+		cfg.obfModSettings.scriptPW = CH[5]
+		cfg.obfModSettings.savePW = CH[6]
+		cfg.obfModSettings.scriptExpiry = CH[7]
+		cfg.obfModSettings.ggPkg = CH[8]
+		cfg.obfModSettings.appPkg = CH[9]
+		cfg.obfModSettings.minGGVer = CH[10]
+		cfg.obfModSettings.minGGBuildVer = CH[11]
+		cfg.obfModSettings.allowNewGGBuildVer = CH[12]
 		--
-		cfg.obfModSettings.text.promoteYourself = CH[12]
-		cfg.obfModSettings.text.inputPass = CH[13]
-		cfg.obfModSettings.text.failInvalidPW = CH[14]
-		cfg.obfModSettings.text.failAppPkgInvalid = CH[15]
-		cfg.obfModSettings.text.failDatePassed = CH[16]
-		cfg.obfModSettings.text.failDeniedPkgs = CH[17]
-		cfg.obfModSettings.text.failGGPkgInvalid = CH[18]
-		cfg.obfModSettings.text.failGGVerBelow = CH[19]
-		cfg.obfModSettings.text.failHookDetected = CH[20]
-		cfg.obfModSettings.text.failIllegalMod = CH[21]
-		cfg.obfModSettings.text.failLogDetected = CH[22]
-		cfg.obfModSettings.text.failRenamed = CH[23]
-		cfg.obfModSettings.text.warnPeeking = CH[24]
+		cfg.obfModSettings.text.promoteYourself = CH[13]
+		cfg.obfModSettings.text.inputPass = CH[14]
+		cfg.obfModSettings.text.failInvalidPW = CH[15]
+		cfg.obfModSettings.text.failAppPkgInvalid = CH[16]
+		cfg.obfModSettings.text.failDatePassed = CH[17]
+		cfg.obfModSettings.text.failDeniedPkgs = CH[18]
+		cfg.obfModSettings.text.failGGPkgInvalid = CH[19]
+		cfg.obfModSettings.text.failGGVerBelow = CH[20]
+		cfg.obfModSettings.text.failHookDetected = CH[21]
+		cfg.obfModSettings.text.failIllegalMod = CH[22]
+		cfg.obfModSettings.text.failLogDetected = CH[23]
+		cfg.obfModSettings.text.failRenamed = CH[24]
+		cfg.obfModSettings.text.warnPeeking = CH[25]
 		encryptLua()
 		print("[✔] Finished encrypting "..cfg.fileChoice.."!\n[+] Input File: "..cfg.fileChoice..".lua\n[+] Output File: "..cfg.fileChoice..".enc.lua")
 		gg.toast("[✔] Encryption complete.")
@@ -512,7 +537,7 @@ end
 function wrapper_compileLua()
 	-- Ask user for file...
 	local CH = gg.prompt({
-		'📂️ Input File (make sure the extension is .lua):',
+		'📂 Input File (make sure the extension is .lua):',
 		'Strip debugging symbol (not recommended)',
 		'Preserve namespaces',
 		'Decompile (TODO-LoPrio,Waiting)'
@@ -529,7 +554,7 @@ end
 function wrapper_luacAssembly()
 	-- Ask user for file...
 	local CH = gg.prompt({
-		'📂️ Input File (make sure the extension is either .luac/.lasm):',
+		'📂 Input File (make sure the extension is either .luac/.lasm):',
 		'Assemble'
 	},{cfg.fileChoice,false},{'file','checkbox'});
 	if CH and CH[1] then
@@ -551,7 +576,7 @@ function wrapper_luacAssembly()
 end
 function wrapper_fixLuacHeader()
 	-- Ask user for file...
-	local CH = gg.prompt({'📂️ Input File (make sure the extension is .enc.lua, BTW i recommend reassemble the script instead of fixing the header):'},{cfg.fileChoice},{'file'});
+	local CH = gg.prompt({'📂 Input File (make sure the extension is .enc.lua, BTW i recommend reassemble the script instead of fixing the header):'},{cfg.fileChoice},{'file'});
 	if CH and CH[1] then
 		gg.toast("Fixing Lua header, Please wait...\nWarning: still in experimentation phase")
 		cfg.fileChoice = CH[1]:gsub(".enc.lua$",'')
@@ -562,7 +587,7 @@ end
 function wrapper_patches()
 	-- Ask user for file...
 	local CH = gg.prompt({
-		'📂️ Input File (make sure the extension is .enc.lua/.lasm, and make sure to backup your script because this may overwrite the script you chosen):', -- 1
+		'📂 Input File (make sure the extension is .enc.lua/.lasm, and make sure to backup your script because this may overwrite the script you chosen):', -- 1
 		'Remove BigLASM (only for luacompiled file)', -- 2
 		'Remove Garbage (recommended)', -- 3
 		'Remove "hide code" (TODO:poor translation)', -- 4
@@ -606,9 +631,9 @@ function wrapper_patches()
 		gg.toast("Running selected operations... 1.75/10") patchAssembly("EssentialMinify")
 
 	--Make sure the 2nd argument of `patchAssembly(file,patchName)` is also on `deobfMod[patchName]` or crashed.
-		io.writeFile(cfg.fileChoice..".dbg.lasm",DATA) -- debug lol
-		if CH[8] then gg.toast("Running selected operations... 2/10") patchAssembly("selfDecrypt") print("[✔] Self decrypted! (some)")end
-		if CH[3] then gg.toast("Running selected operations... 3/10") patchAssembly("RemoveGarbage") print("[✔] Garbages removed!")end
+		if cfg.debugMode then io.writeFile(cfg.fileChoice..".dbg.lasm",DATA) end
+		if CH[3] then gg.toast("Running selected operations... 2/10") patchAssembly("RemoveGarbage") print("[✔] Garbages removed!")end
+		if CH[8] then gg.toast("Running selected operations... 3/10") patchAssembly("selfDecrypt") print("[✔] Self decrypted! (some)")end
 		if CH[4] then gg.toast("Running selected operations... 4/10") patchAssembly("RemoveHideCodes") print("[✔] Hide codes removed!")end
 		if CH[5] then gg.toast("Running selected operations... 5/10") patchAssembly("RemoveLasmBlock") print("[✔] LasmBlock Removed!")end
 		if CH[6] then gg.toast("Running selected operations... 6/10") patchAssembly("RemoveBlocker1") print("[✔] Blockers patched!")end
@@ -629,8 +654,8 @@ function wrapper_patches()
 end
 function wrapper_secureRun()
 	local opts = gg.prompt({
-		"📂️ Script:", -- 1
-		"📂️ Wrapper script (commonly used for other modifications):", -- 2
+		"📂 Script:", -- 1
+		"📂 Wrapper script (commonly used for other modifications):", -- 2
 		"❌️ Disable mallicious functions", -- 3
 		"🛡️ Run security tests (if 3rd option enabled)", -- 4
 		"⚠️ Exit if security tests fail (if 3rd + 4th option enabled)", -- 5
@@ -645,8 +670,8 @@ function wrapper_secureRun()
 		"📜️ Minimum size for log call `load()`:", -- 14
 		"📜 Verbose log (TODO)", -- 15
 		"📜 Quieten log (TODO)", -- 16
-		"📜 Dump log (TODO)", -- 17
-		"📜 Print log (TODO)", -- 18
+		"📜 Print log (TODO)", -- 17
+		"📜 Dump log (TODO)", -- 18
 	},{
 		cfg.fileChoice, -- 1
 		nil, -- 2
@@ -664,8 +689,8 @@ function wrapper_secureRun()
 		400, -- 14
 		false, -- 15
 		false, -- 16
-		cfg.scriptPath.."/ScriptLog_"..os.date'%d.%m.%Y_%H.%M.%S'..".log", -- 17
-		true, -- 18
+		true, -- 17
+		cfg.scriptPath..os.date'/ScriptLog_%y%m%d_%H%M%S.log', -- 18
 	},{
 		"file", -- 1
 		"file", -- 2
@@ -683,8 +708,8 @@ function wrapper_secureRun()
 		"number", -- 14
 		"checkbox", -- 15
 		"checkbox", -- 16
-		"text", -- 17
-		"checkbox", -- 18
+		"checkbox", -- 17
+		"text", -- 18
 	})
 	if opts and opts[1] then
 		secureRun({
@@ -704,8 +729,8 @@ function wrapper_secureRun()
 			minLogSizeLoad=opts[14],
 			verboseLog=opts[15],
 			quietLog=opts[16],
-			dumpLogTo=opts[17],
-			printLog=opts[18],
+			printLog=opts[17],
+			dumpLogTo=opts[18],
 		})
 	end
 end
@@ -718,56 +743,86 @@ function encryptLua()
 	cfg.dec_wrap = "local function decode"..cfg.dec_wrap(cfg.obfModSettings.pwHash).." end\n"
 
 	-- Put the input file content to buffer
+	gg.toast("[i] Reading file contents to buffer...")
 	print("[i] Reading file contents to buffer...")
 	collectgarbage()
 	DATA = io.readFile(cfg.fileChoice..'.lua')
 
-	if cfg.obfModSettings.encryptStrings then
-		print("[i] Encrypting strings...")
+	if cfg.obfModSettings.stripAnnotations then
+		print("[i] Removing annotations to prevent parsing error...")
+		local totalReplaced,all_string,tmp = 0,{
+			'%-%-%[%[.-%]%]',
+			'%-%-[^\n]*'
+		}
 		collectgarbage()
-		DATA = DATA:gsub('os%.exit%(%)','os.exit()print("[AntiExitDetect] Anti exit detected, forcing script to crash")return(nil)()') -- force exit
-		local all_string = {
+		for i=1,#all_string do
+			gg.toast("[i] Removing annotations to prevent parsing error... ("..i..'/'..#all_string..')')
+			DATA,tmp = string.gsub(DATA,all_string[i],'')
+			totalReplaced = totalReplaced + tmp
+		end
+		print("[i] "..totalReplaced.." annotations/comments removed!")
+	end
+
+	print("[i] Injecting anti os.exit detection...")
+	DATA = DATA:gsub('os%.exit%(%)','os.exit()print("[AntiExitDetect] Anti exit detected, forcing script to crash")return(nil)()') -- force exit
+
+	if cfg.obfModSettings.encryptStrings then
+		gg.toast("[i] Encrypting strings...")
+		print("[i] Encrypting strings...")
+		print(" |  Developer note: String encryption is experimental! you might encounter errors when compiling the script.")
+		collectgarbage()
+		local totalReplaced,all_string,tmp = 0,{
+		--'%[=*%[(.-)%]=*%]', -- quirky
 			'%"%\\"([^\n]-)%\\"%"',
 			"%'%\\'([^\n]-)%\\'%'",
 			'%"([^\n]-)%"',
 			"%'([^\n]-)%'",
 			'%[===%[(.-)%]===%]',
+		--'%[==%[(.-)%]==%]', bug: collision with decode function
 			'%[=%[(.-)%]=%]',
 			'%[%[(.-)%]%]',
 		}
 		for i=1,#all_string do
-			DATA = string.gsub(DATA,all_string[i],cfg.enc) -- untested
+			DATA,tmp = string.gsub(DATA,all_string[i],cfg.enc) -- untested
+			totalReplaced = totalReplaced + tmp
 		end
-	--DATA = DATA:gsub('%(decode%((.-)%)%)',function(i)return'('..cfg.enc(i)..')'end) garbage?
-	--DATA = DATA:gsub('%[([%[=]*)(.-)([%]=]*)%]',function(i)return'('..cfg.enc(i)..')'end) buggy
+		print("[i] "..totalReplaced.." strings encrypted!")
+		totalReplaced,all_string,tmp = nil,nil,nil
 	end
 
 	if cfg.obfModSettings.encryptTables then
 	-- below can be buggy (in case of function decode([==[ENCRYPTED]==])[CONTENT]end.
 	-- replace any `function bla.bla()` > `bla.bla = function()` to prevent such bug from occuring
-		print("[i] Encrypting table functions...")
+		gg.toast("[i] Encrypting common table queries...")
+		print("[i] Encrypting common table queries...")
 		print(" |  Developer note: please make sure your script doesn't --")
 		print(" |  have any of the syntaxes like `function a.b()...end`")
 		print(" |  The encryptor had a known bug where it throws error when compiling")
 		print(" |  an obfuscated script with the said code")
+		local totalReplaced,tmp = 0
 		collectgarbage()
 		for _,v in ipairs{"gg","io","os","string","math","table","debug","bit32","utf8"} do
 			print(" |  "..v)
-			DATA = DATA:gsub(v.."%.(%a+)%(",function(s)return v..'['..cfg.enc(s)..']('end)
+			DATA,tmp = DATA:gsub(v.."%.(%a+)%(",function(s)return v..'['..cfg.enc(s)..']('end)
+			totalReplaced = totalReplaced + tmp
 		end
+		print("[i] "..totalReplaced.." common table queries encrypted!")
+		totalReplaced,all_string,tmp = nil,nil,nil
 	end
 
 	print("[i] Wrapping main function to mainPayload()...")
 	collectgarbage()
 	DATA = "local function mainPayload()local gg,os,io=gg,os,io "..DATA.."\nend mainPayload()"
 
+	gg.toast("[i] Configuring Obfuscations...")
 	print("[i] Configuring Obfuscations...")
 	collectgarbage()
-	for i in pairs(obfMod) do
-		obfMod[i] = obfMod[i]()
+	for i,v in pairs(obfMod) do
+		if type(v) == 'function' then obfMod[i] = v() end
 	end
 
 	-- Append obfuscation module before script starts, and put decryptor at very beginning (applied in reverse order)
+	gg.toast("[i] Applying Obfuscations...")
 	print("[i] Applying Obfuscations... (sorted Z-A/bottom-top)")
 	collectgarbage()
 	for i,v in pairs_sorted(obfMod) do
@@ -780,7 +835,7 @@ function encryptLua()
 	-- Encryption done, "Compile" the file (in a hacky way lol)
 	cfg.enc = enc_wrap_XOR -- Restore original function
 	collectgarbage()
-	io.writeFile(cfg.fileChoice..".debug.lua",DATA) -- debugging lol
+	if cfg.debugMode then io.writeFile(cfg.fileChoice..".debug.lua",DATA) end
 	compileLua(".enc.lua",true,false)
 
 	-- Post-compile. Corrupt the Lua file header to prevent unluac from decompiling
@@ -797,6 +852,7 @@ function decryptLua()
 	io.writeFile(cfg.fileChoice..".dec.lua",DATA)
 end
 function compileLua(fileExt,stripDebugSymbols,useNames)
+	gg.toast("[i] Compiling...")
 	print("[i] Compiling "..cfg.fileChoice.."...")
 	DATA,tmp = load(DATA or io.readFile(cfg.fileChoice..'.lua'))
 	stripDebugSymbols = stripDebugSymbols or false
@@ -878,7 +934,7 @@ function removeBigLasm()
 	io.writeFile(cfg.fileChoice..".enc.lua",string.dump(
 		load(
 			io.readFile(cfg.fileChoice..'.enc.lua'):gsub(
-				'\4\17\39\0\0'..('\0\99\53\131\82\116\66\115\67\53'):rep(1e3),
+				'\4\17\39\0\0'..('\0\99\53\131\82\116\66\115\67\53'):rep(1e3), -- Credit: LuaGGEG
 				'\4\1\0\0\0' -- can also be 4,9,0,0,0 sequence
 			):gsub(
 				'\4\17\39\0\0'..('\0\99\53\66\82\116\66\115\67\53'):rep(1e3),
@@ -984,18 +1040,18 @@ function secureRun(opts)
 			}
 			local origRef = {} -- original reference, queried using fake function, returns real ones (mostly used by fake debug thing).
 			local ContainmentFiles = {}
-			ContainmentFiles.pwd = cfg.scriptPath
-			ContainmentFiles.containmentdir = ContainmentFiles.pwd.."/ContainmentDir"
-			ContainmentFiles.luascript = ContainmentFiles.containmentdir.."/ContainedLua.lua"
-			ContainmentFiles.txtfile = ContainmentFiles.containmentdir.."/ContainedText.txt"
+			ContainmentFiles.pwd = cfg.scriptPath.."_ContainmentDir"
+			ContainmentFiles.luascript = ContainmentFiles.pwd..'/'..opts.targetScript:gsub('.+/','')
+			ContainmentFiles.txtfile = ContainmentFiles.pwd.."/ContainedText.txt"
 			ContainmentFiles.dumplogfile = ContainmentFiles.pwd.."/ScriptLog_"..os.date'%d.%m.%Y_%H.%M.%S'..".log"
 			gg.getFile = (function()local _=ContainmentFiles.luascript return function()return _ end end)() -- fix bug
 			gg.VERSION = opts.ggVer
 			gg.VERSION_INT = opts.ggVerInt
 			gg.BUILD = opts.ggVerBuild
 			gg.PACKAGE = opts.ggPkgName
+			gg.setVisible(true) -- can't fool us, enc morons >:-(
 			if opts.disableMalFn then -- Disable mallicious functions
-				local function void(name)
+				local void = function(name)
 					return function(...)
 						Repl.print("[Warn] Intercepted: " .. name)
 						return nil
@@ -1046,8 +1102,7 @@ function secureRun(opts)
 						content=data
 					}
 				end
-			--TODO: voiding IO variable caused failure on some script
-				os.date = function(dateFormat)
+				os.date    = function(dateFormat)
 					if dateFormat == "%Y%m%d" then return "19991230" end
 					return Repl.os.date(dateFormat)
 				end
@@ -1055,38 +1110,36 @@ function secureRun(opts)
 					if type(cmd) ~= 'string' then cmd = 'MalformedType:'..type(cmd) end
 					Repl.print('[Warn] Intercepted os.execute("'..cmd..'")')
 				end
-				os.remove = function(path)
+				os.remove  = function(path)
 					if type(path) ~= 'string' then path = 'MalformedType:'..type(path) end
 					Repl.print('[Warn] Intercepted os.remove("'..path..'")')
 				end
 				io.open    = function(file,opmodes) -- only log because orig io.open returns file/type userdata
-					if not file then return nil end
+					if not file then return nil,': No such file or directory',2 end
 					Repl.print('[Malicious] something tries to open "'..file..'" with opmode '..tostring(opmodes))
 				--return Repl.io.open(ContainmentFiles.txtfile,"r") cant do this because stuckk on loop
 					return Repl.io.open(file,opmodes)
 				end
-				io.close   = void("io.close")
-				io.input   = void("io.input")
-			--io.input    = function(...)
-				--Repl.print('[Malicious] io.input',...)
-				--return Repl.io.input(ContainmentFiles.txtfile,"r")
-				--return Repl.io.input(...)
-			--end
+				io.close   = function()
+					Repl.print("[Warn] Intercepted: io.close")
+					return true
+				end
 				io.output  = void("io.output")
 				io.read  	 = void("io.read")
-			--io.read    = function(...)
-				--Repl.print('[Malicious] io.read',...)
-				--return Repl.io.read(ContainmentFiles.txtfile,"r")
-				--return Repl.io.read(...)
-			--end
 				io.write   = void("io.write")
-				_ENV._VERSION = "Lua 5.0"
-				_ENV.loadfile = void("_ENV.loadfile")
-				_ENV.loadstring = void("_ENV.loadstring")
-				_ENV.io = io
-				_ENV.debug = debug
-				_ENV.print = print
-				_ENV.os = os
+		--[[io.input	 = function(...)
+					Repl.print('[Malicious] io.input',...)
+					return Repl.io.input(ContainmentFiles.txtfile,"r")
+					return Repl.io.input(...)
+				end]]
+		--[[io.read		 = function(...)
+					Repl.print('[Malicious] io.read',...)
+					return Repl.io.read(ContainmentFiles.txtfile,"r")
+					return Repl.io.read(...)
+				end]]
+				_VERSION = "Lua 5.0"
+				loadfile = void("_ENV.loadfile")
+				loadstring = void("_ENV.loadstring")
 				tostring = function(a,...) -- prevent anti-hook, especially with function
 					if type(a) == "function" then
 						return "function: 0x"..string.format("%x",math.random(0x100000000fff,0xffffffffffff))
@@ -1095,12 +1148,12 @@ function secureRun(opts)
 					end
 					return Repl.tostring(a,...)
 				end
-				debug.gethook = function(f,a,b) -- prevent anti-hook
-					print("debug.gethook")
+				debug.gethook = function() -- f,a,b. prevent anti-hook
+					Repl.print("[Warn] Intercepted: debug.gethook")
 					return nil, 0
 				end
-				debug.getinfo = function(f,a,b) -- prevent anti-hook
-					print("debug.getinfo")
+				debug.getinfo = function(f) -- ...,a,b. prevent anti-hook
+				--Repl.print("[Warn] Intercepted: debug.getinfo")
 					return {
 						short_src = "[Java]",
 						source = "=[Java]",
@@ -1117,7 +1170,7 @@ function secureRun(opts)
 					}
 				end
 				debug.getlocal = function(a,b)
-					print("debug.getlocal")
+					Repl.print("[Warn] Intercepted: debug.getlocal")
 				--prevent another anti-hook
 					local name,value = Repl.debug.getlocal(a,b)
 					--local name,value = Repl.debug.getlocal(true)
@@ -1126,18 +1179,17 @@ function secureRun(opts)
 					return name,value
 				end
 				debug.sethook = function(f,a,b) -- prevent anti-hook
-					print("debug.sethook")
+				--Repl.print("[Warn] Intercepted: debug.sethook")
 					return
 				end
 				debug.traceback = function(m,a,b) -- prevent log spam
 					local res = Repl.debug.traceback(m,a,b)
-					print("debug.traceback",m,a,b,'->',res)
+				--Repl.print("[Warn] Intercepted: debug.traceback")
 					--if m then m = m.."\n" else m = "" end
 					--return m.."stack traceback:\n	"..ContainmentFiles.luascript..": in main chunk\n	[Java]: in ?"
 					return res
 				end
 				string.rep = function(s,a) -- reduce log spam size
-					print("string.rep")
 					if a > 99 then a = 2 end
 					return Repl.string.rep(s,a)
 				end
@@ -1146,7 +1198,18 @@ function secureRun(opts)
 				end
 
 			--others
-
+				gg.isPackageInstalled = function(p) -- prevent querying of certain packages
+					local packages = {
+					-- Good old SSTool
+						"sstool.only.com.sstool",
+						"com.hckeam.mjgql",
+					-- Some scripts is really weird, why Termux was considered a "decryptor" ?
+						"com.termux",
+					}
+					for i=1,#packages do if p == packages[i] then return false end end -- return false if certain pkgs queries detected
+					if p == Repl.gg.PACKAGE then return true end -- return true if gg pkg is queried
+					return Repl.gg.isPackageInstalled(p) -- let gg API do the rest
+				end
 
 
 
@@ -1172,7 +1235,7 @@ function secureRun(opts)
 			end
 			if opts.runTests then -- Run security tests
 				Repl.print('[i] Running security tests...')
-				if os.execute("echo os.execute test passed") == "os.execute passed" then Repl.print("OS.EXECUTE INTERCEPT TEST FAILED, CONTINUE AT YOUR OWN RISK!") end
+				if os.execute("echo os.execute test passed") == "os.execute test passed" then Repl.print("[!] os.execute intercept test FAILED") end
 				os.remove(ContainmentFiles.txtfile..".sampleremove")
 				io.open()
 				io.close()
@@ -1180,14 +1243,8 @@ function secureRun(opts)
 				io.output()
 				io.read()
 				io.write()
-				if _ENV._VERSION ~= "Lua 5.3" then end
-				if (_ENV.loadfile == void and not _ENV.loadfile()) then end
-				if (_ENV.loadstring == void and not _ENV.loadstring()) then end
-				if _ENV.io == io then end
-				if _ENV.debug == debug then end
-				_ENV.print('If you see [Script] at the beginning of the this text, that means it works!')
-				if (_ENV.print == print) then end
-				if _ENV.os == os then end
+				if _VERSION ~= "Lua 5.0" then end
+				print('If you see [Script] at the beginning of the this text, that means it works!')
 				gg.getFile()
 				gg.getResults(123)
 				gg.makeRequest("http://127.0.0.1")
@@ -1340,42 +1397,43 @@ function secureRun(opts)
 			end
 			if opts.dumpInputStr then -- Dump input strings
 				local pass = math.random(1000,9999)
-				local f = io.open(ContainmentFiles.dumplogfile,'w')
+				local f = Repl.io.open(opts.dumpLogTo,'w')
 				Repl.gg.alert('You chose dump input string option. Displays possible passwords. Works only if the plain password is in the code. On the offer to put password, type '..pass)
 				local cache = {}
 				cache[pass] = true
 				Repl.debug.sethook(function()
 					local stack = {}
 					for j = 1,250 do
-						local _,v = Repl.debug.getlocal(1,j)
-						if v ~= nil then
-							local t = Repl.type(v)
+						local _,v = debugGetLocal(1,j)
+						if v then
+							local t = type(v)
 							if t == 'string' or t == 'number' then stack[v] = true
 							elseif t == 'table' then
-								for _,vv in Repl.pairs(v) do
-									t = Repl.type(vv)
+								for _,vv in pairs(v) do
+									t = type(vv)
 									if t == 'string' or t == 'number' then stack[vv] = true end
 								end
 							end
 						end
 					end
-					if stack[pass] then
-						local buffer = ''
-						for i,_ in Repl.pairs(stack) do
+					if stack[pass] then -- useless
+						local buffer = '' -- temporary to hold some strings
+						for i,_ in pairs(stack) do
 							if not cache[i] then
 								cache[i] = true
 								buffer = buffer..i.."\n"
 							end
 						end
 						if buffer ~= '' then
-							Repl.print(buffer)
-							f:write(buffer)
+							origPrint('[dumpInputStr]',buffer)
+							if f then f:write(buffer)end
 						end
+						buffer = nil
 					end
 				end,'',1)
 			end
 			Repl.gg.toast("[i] Running script In isolated container...")
-			Repl.print("[i] Running "..cfg.fileChoice.." In isolated container...\n==========\n\n")
+			Repl.print("[i] Running script In isolated container...\n==========\n\n")
 
 
 
@@ -1388,13 +1446,13 @@ function secureRun(opts)
 			ScriptResult = ScriptResult()
 		end
 	 -- Cleanup some fricked variables
+		Repl.debug.sethook(nil,'',1)
 		for i,v in pairs(Repl)do _G[i]=v end
-		Repl = nil
-		print("\n\n==========\n\n")
-		debug.sethook(nil,'',1)
+	--Repl = nil
+		print("\n\n==========")
 		collectgarbage()
 	end
-	return print("[+] Clean exit ---\n",ScriptResult)
+	return print("[+] Clean exit ---\n",ScriptResult or '')
 end
 --————————————————————————————————--
 
@@ -1418,6 +1476,8 @@ table.tostring = function(t,depthparam)
 				r = r..table.tostring(v,(depthparam or 0)+1)
 			elseif type(v) == 'boolean' or type(v) == 'number' then
 				r = r..tostring(v)
+			elseif type(v) == 'function' then
+			--r = r..tostring(v)
 			else
 				r = r..'"'..v..'"'
 			end
@@ -1501,10 +1561,11 @@ pairs_sorted = function(t) -- A hacky way to loop tables in sorted order
     end
   end
 end
-logOutput = function(content,toPrint,toFile,verbosenessLevel)
+logOutput = function(content,toPrint,toFile,verbosenessLevel,rateLimit)
 	toPrint = toPrint or true
 	toFile = toFile or false
 	verbosenessLevel = verbosenessLevel or 6 -- Following Linux printk log rule
+	rateLimit = rateLimit or 1 -- os.clock rule
 	if verbosenessLevel > cfg.logLevel then return end -- return if above an certain set level
 	if toPrint then print(table.unpack(content)) end -- print if told so
 	if toFile then print('[LogFile]',table.unpack(content)) end -- print if told so
