@@ -55,5 +55,5 @@ Just to make my life (maybe yours too) easier. and not having to install other p
 - Daddyaaaaaaa - for Remove blocker 1 deobfuscation codes.
 - LuaGGEG, Angela, MafiaWar - for Remove BigLASM code.
 
-I created this under 24 hour (on a phone btw!) as a challenge :D So it would be really appreciated if you can contribute to LuaTools GitHub repository (once the script has been open-sourced: https://github.com/ABJ4403/LuaTools) or give a star to my project on GitHub. or simply credit my work (by not removing mentions about me and others in this script :) Thank you :D
+I created this under 24 hour (on a phone btw!) as a challenge :D So it would be really appreciated if you can contribute to LuaTools GitHub repository or give a star to my project on GitHub. or simply credit my work (by not removing mentions about me and others in this script :) Thank you :D
 PS: This is not compatible with Lua interpreter, this script is designed with GameGuardian APIs and Android system in mind.
