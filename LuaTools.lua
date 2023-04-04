@@ -45,7 +45,7 @@ end
 -- if you encrypt this script, then you can't customize stuff here.
 -- you will need a code editor (preferably the one that has color-coding & code-folding, like Acode), and Lua knowledge for customizing these stuff below...
 local cfg = {
-	VERSION = "2.3", -- you can ignore this, its just for defining script version :)
+	VERSION = "2.4", -- you can ignore this, its just for defining script version :)
 	enc = enc_wrap_XOR, -- useless anyway lol, handled on the bottom
 	xdenc = xdenc_XOR, -- this means XOR Enc.. Dec..
 	dec_wrap_factory = dec_wrap_XOR,
@@ -119,7 +119,7 @@ end,]]
 	H_NoIllegalMod       = function()return 'if string.rep("a",2)~="aa" then print("'..cfg.obfModSettings.text.failIllegalMod..'")os.exit()end'end,
 	I_NoRename           = function()return 'local origFileName,fileName="'..cfg.fileChoice:gsub('^/.+/','')..'.enc.lua",gg.getFile():gsub("^/.+/","")if fileName ~= origFileName then print("'..cfg.obfModSettings.text.failRenamed..' "..origFileName..". '..cfg.obfModSettings.text.yourFilename..'"..fileName)os.exit()end'end,
 	J_AntiSSTool				 = function()return [[while nil do local i={}if(i.i)then;i.i=i.i(i)end end]]end,
-	K_HBXVpnObf					 = function()return [[while nil do local obf_srE6={nil,-nil % -nil,nil,-nil,nil,nil % -nil,-nil % nil,-nil}if #obf_srE6<0 then break end if obf_srE6[#obf_srE6]<0 then break end if obf_srE6[-nil] ~= #obf_srE6 & ~obf_srE6 then obf_srE6[#obf_srE6]=obf_srE6[-nil]()end if #obf_srE6<nil then obf_srE6[#obf_srE6]=obf_srE6[-nil%nil]()end goto X1 if nil or 0 then return end::X0::obf_P3oU()::X1::function obf_P3oU()goto X2 if nil or 0 then return end::X3::obf_P3oU()::X2::goto X3 end goto X0 for i=1,0 do obf_srE6="TQUILA1"end for i=1,0 do if nil then obf_srE6="TQUILAV1"end end if nil then if true then else goto obf_s4df end if nil then else goto obf_s4df end if nil then else goto obf_s4df end::obf_s4df::end end]]end,
+	K_HBXVpnObf					 = function()return [[while nil do local obf_srE6={nil,-nil % -nil,nil,-nil,nil,nil % -nil,-nil % nil,-nil}if #obf_srE6<0 then break end if obf_srE6[#obf_srE6]<0 then break end if obf_srE6[-nil] ~= #obf_srE6 & ~obf_srE6 then obf_srE6[#obf_srE6]=obf_srE6[-nil]()end if #obf_srE6<nil then obf_srE6[#obf_srE6]=obf_srE6[-nil%nil]()end goto X1 if nil or 0 then return end::X0::obf_P3oU()::X1::function obf_P3oU()goto X2 if nil or 0 then return end::X3::obf_P3oU:_()::X2::goto X3 end goto X0 for i=1,0 do obf_srE6="TQUILA1"end for i=1,0 do if nil then obf_srE6="TQUILAV1"end end if nil then if true then else goto obf_s4df end if nil then else goto obf_s4df end if nil then else goto obf_s4df end::obf_s4df::end end]]end,
 	L_HookDetect				 = function()return 'local tmp if debug.getinfo(1).istailcall then print("'..cfg.obfModSettings.text.failHookDetected..'")os.exit()end for _,t in ipairs{gg,io,os,string,math,table,bit32,utf8}do if type(t) == "table" then for _,f in pairs(t)do if type(f) == "function" then tmp = debug.getinfo(f)if tmp.short_src ~= "[Java]" or tmp.source ~= "=[Java]" or tmp.what ~= "Java" or tmp.namewhat ~= "" or tmp.linedefined ~= -1 or tmp.lastlinedefined ~= -1 or tmp.currentline ~= -1 or tostring(f):match("function: @(.-):")then print("'..cfg.obfModSettings.text.failHookDetected..'")os.exit()end end end end end tmp=nil'end,
 	M_Password           = function()
 		if cfg.obfModSettings.scriptPW ~= '' then
@@ -174,7 +174,8 @@ local deobfPatch = {
 		{'\nJMP :goto_%d+  ; %+0 ↑\n','\n'},
 		{'\nJMP :goto_%d+  ; %+0 ↓\n','\n'},
 		{'\nOP%[%d%d%] 0x[0-9a-f]-\n','\n'},
-	--remove null for-loop
+	--remove null loop
+		{'\n:goto_(%d-)\nJMP :goto_(%d-)\n',function(a,b)return a == b and''or'\n:goto_'..a..'\nJMP :goto_'..b..'\n' end}, -- while true do end/infinite loop
 		{'FORLOOP v%d+ GOTO%[%-%d+%]  ; %-%d+ ↑\n; %.end local v%d+ "%(for index%)"\n; %.end local v%d+ "%(for limit%)"\n; %.end local v%d+ "%(for step%)"\n; %.end local v%d+ "%(for iterator%)"',''},
 		{'FORLOOP v%d+ GOTO%[%d+%]  ; %+%d+ ↓\n; %.end local v%d+ "%(for index%)"\n; %.end local v%d+ "%(for limit%)"\n; %.end local v%d+ "%(for step%)"\n; %.end local v%d+ "%(for iterator%)"',''},
 		{'LOADK v%d+ %d+\nLOADK v%d+ %d+\nLOADK v%d+ %d+\n; %.local v%d+ "%(for index%)"\n; %.local v%d+ "%(for limit%)"\n; %.local v%d+ "%(for step%)"\n; %.local v%d+ "%(for iterator%)"\nFORPREP v%d+ :goto_%d+  ; %+0 ↓\n:goto_%d+\nFORLOOP v%d+ :goto_%d+  ; %-1 ↑\n; %.end local v%d+ "%(for index%)"\n; %.end local v%d+ "%(for limit%)"\n; %.end local v%d+ "%(for step%)"\n; %.end local v%d+ "%(for iterator%)"',''},
@@ -227,8 +228,8 @@ LEN v1 v1  #a
 		},
 	},
 	RemoveHideCodes = {
-		{' SET_TOP\n','\n'}, -- caused failure when some function is called (CALL v0..vXXX SET_TOP, example code that triggers this inst: `os.exit(print())`)
-		{'\nSETTABLE v%d+ "[^\n]*" v%d+\n','\n'}, -- looks like this removes important code dont use this (eg: a.b = nil)
+		{' SET_TOP\n','\n'}, -- CALL v?..v? SET_TOP. some code fails, `print((function()return 1 end)()` returns nil instead of 1)
+		{'\nSETTABLE v%d+ "[^\n]*" v%d+\n','\n'}, -- looks like this removes important code dont use this (a.b = nil)
 	--{'\nSETTABLE v%d+ "[^\n]*" nil\n','\n'},
 	--{'\nSETTABLE v%d+ v%d+ nil\n','\n'},
 	},
@@ -238,21 +239,22 @@ LEN v1 v1  #a
 		{'\nCALL v%d+..v%d+ v%d+..v%d+\n','\n'},
 		{'\nEQ 1 v%d+ v%d+\n','\n'},
 		{'\nEQ 1 v%d+ nil\n','\n'}, -- EQ0 = `v1 ~= nil`,EQ1 = `v1 == nil`,
-		{'\nGETTABLE v%d+ v%d+ nil\n','\n'}, -- table[nil]
-		{'\nGETTABLE v%d+ v%d+ "d"\n','\n'},
-		{'\nGETTABLE v%d+ v%d+ "clearResults"\n','\n'}, -- gg.clearResults() ???
-		{'\nGETTABUP v%d+ u[^\n]* "ipairs"\n','\n'}, -- ipairs() ?
-		{'\nGETTABUP v%d+ u[^\n]* "i"\n','\n'}, -- i
-	--{'\nLOADBOOL v%d+ 0\n','\n'},
-		{'\nLOADNIL v%d+..v%d+\n','\n'},
+		{'\nGETTABLE v%d- v%d- nil\n','\n'}, -- table[nil]
+		{'\nGETTABLE v%d- v%d- "d"\n','\n'}, -- table.d
+		{'\nGETTABLE v%d- v%d- "clearResults"\n','\n'}, -- gg.clearResults() ???
+		{'\nGETTABUP v%d- u%d- "ipairs"\n','\n'}, -- ipairs() ?
+		{'\nGETTABUP v%d- u%d- "i"\n','\n'}, -- i
+	--{'\nLOADBOOL v%d+ 0\n','\n'}, -- bruh = true/false
+		{'\nLOADNIL v%d+..v%d+\n','\n'}, -- a,b=nil,nil
 		{'\nMOVE v%d+ v%d+\n','\n'}, -- to move certain assembly values, usually followed by CALL inst
 		{'\nNEWTABLE v%d+ 0 0\n','\n'}, -- new table with no items
-		{'\nSELF v%d+ v%d+ "Z"\n','\n'}, -- ?:Z()
-		{'\nSELF v%d+ v%d+ "_"\n','\n'}, -- ?:_()
-		{'\nSETTABUP u%d+ "cuk" v%d+\n','\n'},
-		{'\nSUB v%d+ v%d+ true\n','\n'},
-		{'\nSUB v%d+ nil nil\n','\n'},
-		{'\nTEST v%d+ [01]\n','\n'},
+		{'\nSELF v%d+ v%d- "Z"\n','\n'}, -- ?:Z()
+		{'\nSELF v%d+ v%d- "_"\n','\n'}, -- ?:_()
+		{'\nSETTABUP u%d- "[^\n]*" "[^\n]*"\n','\n'}, -- _ENV.obf_bla = ...
+		{'\nSETTABUP u%d- v%d- v%d-\n','\n'}, -- _ENV.obf_bla = ...
+		{'\nSETTABUP u%d- v%d- "[^\n]*"\n','\n'}, -- _ENV.obf_bla = ...
+		{'\nSETTABUP u%d- "[^\n]*" v%d-\n','\n'}, -- _ENV.obf_bla = ...
+		{'\nTEST v%d+ [01]\n','\n'}, -- a and/or b
 		{'\nUNM v%d+ v%d+\n','\n'},
 		{'\nCLOSURE v%d+ F%d+\nSETTABUP u%d+ "fxs" v%d+\n','\n'},
 		{'\nCLOSURE v%d+ F%d+\nSETTABUP u%d+ "SearchWrite" v%d+\n','\n'},
@@ -264,7 +266,7 @@ LEN v1 v1  #a
 		{'\nLOADK v%d+ "SearchWrite"\nCLOSURE v%d+ F%d+\nSETTABUP u%d+ v%d+ v%d+\n','\n'},
 		{'\nLOADK v%d+ "setvalue"\nCLOSURE v%d+ F%d+\nSETTABUP u%d+ v%d+ v%d+\n','\n'},
 		{'\nLOADK v%d+ 1\nLOADK v%d+ 0\nLOADK v%d+ 1\n; %.local v%d+ "%(for index%)"\n; %.local v%d+ "%(for limit%)"\n; %.local v%d+ "%(for step%)"\n; %.local v%d+ "%(for iterator%)"\nFORPREP v%d+ :goto_%d+  ; %+%d+ ↓\n','\n'},
-		{'\nNEWTABLE v%d+ %d 0\n','\nGETTABUP v0 u0 "GARBAGE"\n'},
+		{'\nNEWTABLE v%d+ %d 0\n','\nGETTABUP v0 u0 "GARBAGE"\n'}, -- A = {..} > A = _ENV.GARBAGE
 		{'\nTFORCALL v%d+..v%d+\n','\n'},
 		{'\nTFORLOOP v%d+ :goto_%d+* ; %-%d+ ↑\n','\n'},
 	},
@@ -277,9 +279,9 @@ LEN v1 v1  #a
 		{'%.func (F%d+) ; 0 upvalues, 0 locals, 0 constants, 0 funcs\n%.source ""\n%.linedefined 0\n%.lastlinedefined 0\n%.numparams 0\n%.is_vararg ([01])\n%.maxstacksize %d+\n%.end ; F%d+',function(n,v)return'.func '..n..'\n.source ""\n.linedefined 0\n.lastlinedefined 0\n.numparams 0\n.is_vararg '..v..'\n.maxstacksize 0\nRETURN\n.end'end},
 	},
 	JmpObf = {
-	--tries to remove JMP obfuscations
-		{'\nJMP :goto_(%d+)  ; (%-?%d+) ↑\n',function(l,o)l,o=tonumber(l),tonumber(o) if l < -999 or l > 0 then return""else return"JMP :goto_"..l.."  ; "..o.." ↑\n"end end},
-		{'\nJMP :goto_(%d+)  ; (%-?%d+) ↓\n',function(l,o)l,o=tonumber(l),tonumber(o) if l < 0 or l > 999 then return""else return"JMP :goto_"..l.."  ; "..o.." ↓\n"end end},
+	--tries to remove some JMP obfuscations (this wont work on JMP obfuscated instruction though)
+		{'\nJMP :goto_(%d+)  ; (%-%d+) ↑\n',function(l,o)l,o=tonumber(l),tonumber(o) return l > 0 or l < -999 and""or"JMP :goto_"..l.."  ; "..o.." ↑\n"end},
+		{'\nJMP :goto_(%d+)  ; (%d+) ↓\n'  ,function(l,o)l,o=tonumber(l),tonumber(o) return l < 0 or l >  999 and""or"JMP :goto_"..l.."  ; "..o.." ↓\n"end},
 	},
 }
 --————————————————————————————————--
@@ -1009,12 +1011,11 @@ function secureRun(opts)
 		print("[VirtGG] Preparing isolated container...")
 		local Repl
 
-		do -- Prepare fricked variables (contain it so it doesnt get leaked and be read by script by indexing _G)
+		do -- Prepare fricked variables (contain it so it doesnt get leaked and be read by script by indexing _ENV)
 
 
 
 			Repl = {
-				["print"]=print,
 				["io"]=table.copy(io),
 				["os"]=table.copy(os),
 				["gg"]=table.copy(gg),
@@ -1022,12 +1023,13 @@ function secureRun(opts)
 				["string"]=table.copy(string),
 				["math"]=table.copy(math),
 				["table"]=table.copy(table),
+				["utf8"]=table.copy(utf8),
+				["print"]=print,
 				["env"]=_ENV,
 				["loadfile"]=loadfile,
 				["loadstring"]=loadstring,
 				["load"]=load,
 				["tostring"]=tostring,
-				["utf8"]=table.copy(utf8),
 				["select"]=select,
 				["type"]=type,
 				["pairs"]=pairs,
@@ -1045,7 +1047,15 @@ function secureRun(opts)
 			gg.VERSION_INT = opts.ggVerInt
 			gg.BUILD = opts.ggVerBuild
 			gg.PACKAGE = opts.ggPkgName
-			gg.setVisible(true) -- can't fool us, enc morons >:-(
+		--can't fool us, enc plebs
+			gg.setVisible(true)
+			table.tostring = nil
+			table.copy = nil
+			table.merge = nil
+			os.sleep = nil
+			io.readFile = nil
+			io.writeFile = nil
+			string.char = Repl.string.char
 			if opts.disableMalFn then -- Disable mallicious functions
 				local void = function(name)
 					return function(...)
@@ -1245,11 +1255,11 @@ function secureRun(opts)
 					return
 				end
 				debug.traceback = function(m,a,b) -- prevent log spam, but can also be used for log detection when used
-					local res = Repl.debug.traceback(m,a,b)
-				Repl.print("[Warn] Intercepted: debug.traceback")
+				--local res = Repl.debug.traceback(m,a,b)
+				--Repl.print("[Warn] Intercepted: debug.traceback")
 					if m then m = m.."\n" else m = "" end
 					return m.."stack traceback:\n	"..ContainmentFiles.luascript..": in main chunk\n	[Java]: in ?"
-					return res
+				--return res
 				end
 				string.rep = function(s,a) -- reduce log spam size
 					if a > 55 then a = 2 end -- in case u ask, this is faster than math.min (already tested it: 1.2s vs 0.4s)
@@ -1299,27 +1309,30 @@ function secureRun(opts)
 				Repl.print('[VirtGG] Running security tests...')
 				local isTestsFailed = false
 
+			--os.execute test
 				if os.execute("echo os.execute test passed") == "os.execute test passed" then Repl.print("[!] os.execute intercept test FAILED") isTestsFailed = true end
 				os.remove(ContainmentFiles.txtfile..".sampleremove")
 
+			--io.popen test
 				local tempIoPopenTest = io.popen("echo io.popen test passed")
 				if tempIoPopenTest:read('*a') == "io.popen test passed" then Repl.print("[!] io.popen intercept test FAILED") isTestsFailed = true end
 				tempIoPopenTest:close()
 				tempIoPopenTest = nil
 
-				if type(io.open(ContainmentFiles.txtfile..".sampleremove",'r')) == 'userdata' then Repl.print("[!] io.open intercept test FAILED") isTestsFailed = true end
+			--other tests
+			--if type(io.open(ContainmentFiles.txtfile..".sampleremove",'r')) == 'userdata' then Repl.print("[!] io.open intercept test FAILED") isTestsFailed = true end
 			--io.input(ContainmentFiles.txtfile..".sampleremove") -- orig API throws error
 				io.output(ContainmentFiles.txtfile..".sampleremove")
 				io.read()
 				io.write()
 				if ({io.close()})[2] == "cannot close standard file" then Repl.print("[i] io.close intercept test failed, but this API is SAFE") end
-				if _VERSION ~= "Lua 5.0" or _ENV._VERSION ~= "Lua 5.0" or _G._VERSION ~= "Lua 5.0" then Repl.print("[i] _VERSION query test failed, but this API is SAFE")  end
-				gg.getFile()
+				if gg.getFile() ~= ContainmentFiles.luascript then Repl.print("[!] gg.getFile intercept test FAILED") isTestsFailed = true end
+				if gg.makeRequest().url ~= "http://127.0.0.1" then Repl.print("[!] gg.makeRequest intercept test FAILED") isTestsFailed = true end
 				gg.getResults(123)
-				gg.makeRequest("http://127.0.0.1")
+				if _VERSION ~= "Lua 5.0" or _ENV._VERSION ~= "Lua 5.0" or _G._VERSION ~= "Lua 5.0" then Repl.print("[i] _VERSION query test failed, but this API is SAFE")  end
 				print('If you see [Script] after this text, it works')
 				if isTestsFailed then
-					if cfg.exitIfTestsFail then
+					if opts.exitIfTestsFail then
 						gg.toast('[-] Some tests are failed. Exiting for security reason...')
 						Repl.print('[-] Some security tests are failed. Exiting for security reason...')
 						Repl.os.exit()
@@ -1474,9 +1487,6 @@ function secureRun(opts)
 					return false
 				end
 			end
-			if opts.dumpLoadCalls and opts.minLogSizeLoad ~= '' then -- Dump load calls
-
-			end
 			if opts.dumpInputStr then -- Dump input strings
 				local pass = math.random(1000,9999)
 				local f = Repl.io.open(opts.dumpLogTo,'w')
@@ -1538,10 +1548,10 @@ function secureRun(opts)
 	 -- Cleanup some fricked variables
 		Repl.debug.sethook(nil,'cl',1)
 		for i,v in pairs(Repl)do
-			_G[i]=v
+			_ENV[i]=v
 			if Repl.type(v) == 'tables' then
 				for ii,vv in pairs(v)do
-					_G[i][ii]=vv
+					_ENV[i][ii]=vv
 				end
 			end
 		end
@@ -1554,42 +1564,32 @@ end
 --————————————————————————————————--
 
 --— Dependency & init ————————————--
-table.tostring = function(t,depthparam)
-	local depth = 1
-	local function tab(i)
-		str = ""
-		for i=1,i+(depthparam or 0) do str = str.."\t" end
-		return str
-	end
-	if type(t) == 'table' then
-		local r = '{\n'
-		for k,v in pairs(t) do
-			r = r..tab(depth)
-			if type(k) == 'string' then
-			--r = r..'["'..k..'"]='
-				r = r..k..' = '
-			end
-			if type(v) == 'table' then
-				r = r..table.tostring(v,(depthparam or 0)+1)
-			elseif type(v) == 'boolean' or type(v) == 'number' then
-				r = r..tostring(v)
-			elseif type(v) == 'function' then
-			--r = r..tostring(v)
-			else
-				r = r..'"'..v..'"'
-			end
-			r = r..',\n'
+table.tostring = function(t,dp)
+	local r,tv = '{\n'
+	dp = dp or 0
+	for k,v in pairs(t) do
+		r = r..('\t'):rep(dp+1)
+		tv = type(v)
+		if type(k) == 'string' then
+			r = r..k..' = '
 		end
-		if r ~= '' then r = r:sub(1,r:len()-2) end
-		return r..'\n'..tab(depth-1)..'}'
-	else return t end
-end
-table.copy = function(t1)
-	local t2 = {}
-	for k,v in pairs(t1) do
-		t2[k] = v
+		if tv == 'table' then
+			r = r..table.tostring(v,dp+1)
+		elseif tv == 'boolean' or tv == 'number' then
+			r = r..tostring(v)
+		else
+			r = r..'"'..v..'"'
+		end
+		r = r..',\n'
 	end
-	return t2
+	return r..('\t'):rep(dp)..'}'
+end
+table.copy = function(t)
+  local t2={}
+  for k,v in pairs(t)do
+		t2[k]=type(v)=="table"and table.copy(v)or v
+  end
+  return t2
 end
 table.merge = function(...)
 	--[[
@@ -1600,7 +1600,7 @@ table.merge = function(...)
 	local r = {}
 	for _,t in ipairs{...} do
 		for k,v in pairs(t) do
-			r[k] = v
+			r[k] = type(r[k]) == "table" and table.merge(r[k],v) or v
 		end
 	end
 	return r
@@ -1647,5 +1647,5 @@ logOutput = function(content,toPrint,toFile,verbosenessLevel,rateLimit)
 end
 --
 cfg.fileChoice = cfg.scriptPath
-while true do while not gg.isVisible()do gg.sleep(100)end gg.setVisible(false)MENU()end
+while true do while not gg.isVisible()do gg.sleep(1e3)end gg.setVisible(false)MENU()end
 --————————————————————————————————--
