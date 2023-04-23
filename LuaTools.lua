@@ -45,7 +45,7 @@ end
 -- if you encrypt this script, then you can't customize stuff here.
 -- you will need a code editor (preferably the one that has color-coding & code-folding, like Acode), and Lua knowledge for customizing these stuff below...
 local cfg = {
-	VERSION = "2.4", -- you can ignore this, its just for defining script version :)
+	VERSION = "2.5", -- you can ignore this, its just for defining script version :)
 	enc = enc_wrap_XOR, -- useless anyway lol, handled on the bottom
 	xdenc = xdenc_XOR, -- this means XOR Enc.. Dec..
 	dec_wrap_factory = dec_wrap_XOR,
@@ -1029,6 +1029,9 @@ function secureRun(opts)
 				["loadfile"]=loadfile,
 				["loadstring"]=loadstring,
 				["load"]=load,
+				["dofile"]=dofile,
+				["pcall"]=pcall,
+				["xpcall"]=xpcall,
 				["tostring"]=tostring,
 				["select"]=select,
 				["type"]=type,
@@ -1212,14 +1215,41 @@ function secureRun(opts)
 					Repl.print("[Warn] Intercepted: loadstring")
 					return nullFn
 				end
-				tostring = function(a,...) -- prevent anti-hook, especially with function
-					if type(a) == "function" then
-						return "function: 0x"..string.format("%x",math.random(0x100000000fff,0xffffffffffff))
-					elseif type(a) == "table" then
-						return "table: 0x"..string.format("%x",math.random(0x100000000fff,0xffffffffffff))
-					end
-					return Repl.tostring(a,...)
+				dofile = function(file)
+					if type(file) ~= "string" return end
+					Repl.print("[Warn] Intercepted: dofile: "..file)
+					return Repl.dofile(file)
 				end
+				pcall = function(fn)
+					if type(fn) ~= "function" return end
+					Repl.print("[Warn] Intercepted: pcall")
+					return Repl.pcall(fn)
+				end
+				xpcall = function(fn)
+					if type(fn) ~= "function" return end
+					Repl.print("[Warn] Intercepted: xpcall")
+					return Repl.xpcall(fn)
+				end
+				tostring = (function(a,...)
+					local currentHash = math.random(0x100000000000,0xffffffffffff) -- just in case the script calculates the memory address difference somehow using proprietary algo
+					local hashesOfRandomFn = {} -- remember hashes of random functions in case the script checks same variable twice
+					return function(a,...) -- prevent anti-hook, especially with function
+						if type(a) == "function" then
+							if not hashesOfRandomFn[a] then
+								currentHash = currentHash + math.random(0x100,0xfff)
+								hashesOfRandomFn[a] = currentHash
+							end
+							return "function: 0x"..string.format("%x",hashesOfRandomFn[a])
+						elseif type(a) == "table" then
+							if not hashesOfRandomFn[a] then
+								currentHash = currentHash + math.random(0x100,0xfff)
+								hashesOfRandomFn[a] = currentHash
+							end
+							return "table: 0x"..string.format("%x",hashesOfRandomFn[a])
+						end
+						return Repl.tostring(a,...)
+					end
+				end)()
 				debug.gethook = function() -- f,a,b. prevent anti-hook
 					Repl.print("[Warn] Intercepted: debug.gethook")
 					return nil, 0
@@ -1605,29 +1635,28 @@ table.merge = function(...)
 	end
 	return r
 end
-os.sleep = function(ms)
---no true way to imitate this, this recreation below is inaccurate, its a bit faster
-	local clck = os.clock
-	local start = clck()
-	ms = (ms/5000)
-	while clck() - start < ms do end
-	start,ms,clck = nil,nil,nil
+if not gg.sleep then
+	gg.sleep = function(ms)
+	--no true way to imitate this, the recreation below is inaccurate, its a bit faster
+		local clck = os.clock
+		ms = ms/5000+clck()
+		while clck() < ms do end
+		start,ms,clck = nil,nil,nil
+	end
 end
+--os.sleep = gg.sleep
 io.readFile = function(path,openMode,readMode)
-	local openMode = openMode or 'r'
-	local readMode = readMode or '*a'
-	local file = io.open(path,openMode)
-	local content = file:read(readMode)
+	local file = io.open(path,opMode or 'r')
+	local content = file:read(readMode or '*a')
 	file:close()
 	return content
 end
-io.writeFile = function(path,buffer,writeMode)
-	local writeMode = writeMode or 'w'
-	io.open(path,writeMode):write(buffer):close()
+io.writeFile = function(path,buffer,opMode)
+	io.open(path,opMode or 'w'):write(buffer):close()
 end
 pairs_sorted = function(t) -- A hacky way to loop tables in sorted order
   local i = {} -- make a blank table
-  for k in next,t do table.insert(i,k)end -- Deepclone to new blank table
+  for k in next,t do table.insert(i,k)end -- Deepclone to new blank table (next is slower for sequential tables/array/{1,2,3} but more flexible and saves couple bytes)
   table.sort(i) -- Sort out stuff
   return function() -- this will be used for loopingy stuff
     local k = table.remove(i)
