@@ -1055,7 +1055,6 @@ function secureRun(opts)
 			table.tostring = nil
 			table.copy = nil
 			table.merge = nil
-			os.sleep = nil
 			io.readFile = nil
 			io.writeFile = nil
 			string.char = Repl.string.char
@@ -1216,17 +1215,17 @@ function secureRun(opts)
 					return nullFn
 				end
 				dofile = function(file)
-					if type(file) ~= "string" return end
+					if type(file) ~= "string" then return end
 					Repl.print("[Warn] Intercepted: dofile: "..file)
 					return Repl.dofile(file)
 				end
 				pcall = function(fn)
-					if type(fn) ~= "function" return end
+					if type(fn) ~= "function" then return end
 					Repl.print("[Warn] Intercepted: pcall")
 					return Repl.pcall(fn)
 				end
 				xpcall = function(fn)
-					if type(fn) ~= "function" return end
+					if type(fn) ~= "function" then return end
 					Repl.print("[Warn] Intercepted: xpcall")
 					return Repl.xpcall(fn)
 				end
