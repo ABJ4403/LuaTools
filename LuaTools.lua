@@ -8,411 +8,410 @@
 	Any violation will result in DMCA Takedown Notice.
 
 ]]
---— Predefining stuff ————————————--
-local gg,io,os = gg,io,os -- precache the usual call function (faster function call)
-local tmp,CH,DATA = {} -- blank stuff for who knows...
-local randstr = function(len,byteFrom,byteTo)
-	local len=len or 8
-	local byteFrom=byteFrom or 128
-	local byteTo=byteTo or 255
-	local e=""
-	for i=1,len do
-		e=e..string.char(math.random(byteFrom,byteTo))
-	end
-	return e
-end
---XOR encryption
-local xdenc_XOR = function(iv,key)local iv_,key_,i,stringChar={iv:byte(0,-1)},{key:byte(0,-1)},0,string.char local r=iv:gsub(".",function()i=i+1 return stringChar(iv_[i]~key_[(i%#key_)+1])end)return r end
-local dec_wrap_XOR = (function(key)return'(iv)local iv,key,stringChar={iv:byte(0,-1)},{([==['..key..']==]):byte(0,-1)},string.char for i=1,#iv do iv[i]=stringChar(iv[i]~key[(i%#key)+1]) end return table.concat(iv)'end)
-local enc_wrap_XOR = function(key)
-	dec_wrap_XOR = dec_wrap_XOR(key)
-	local key = {key:byte(0,-1)}
-	return function(str)
-		-- dont encrypt if nothing gets passed
-		str = tostring(str)
-		if str == '' then return [[""]] end
-		str = {str:byte(0,-1)}
-		for i=1,#str do
-			str[i] = string.char(str[i] ~ key[(i % #key) + 1])
-		end
-		-- parenthesis around decode is to prevent parsing error in cases like: `return'a'` > `returndecode(..)`
-		return '(decode([==['..table.concat(str)..']==]))'
-	end
-end
---————————————————————————————————--
-
-
-
 --— Configuration ————————————————--
--- Allow user freedom of changing whatever they want
--- Please DO NOT encrypt this script, because we like to change configuration like below
--- if you encrypt this script, then you can't customize stuff here.
--- you will need a code editor (preferably the one that has syntax-highlighting & code-folding, like Acode), and Lua knowledge for customizing these stuff below...
-local cfg = {
-	VERSION = "2.6", -- you can ignore this, its just for defining script version :)
-	enc = enc_wrap_XOR, -- useless anyway lol, handled on the bottom
-	xdenc = xdenc_XOR, -- this means XOR Enc.. Dec..
-	dec_wrap_factory = dec_wrap_XOR,
-	scriptPath = gg.getFile():gsub('.lua$',''), -- strip the .lua for .conf and stuff,
-	fileChoice = '/sdcard/Notes/test', -- dummy, replaced whenever any file is selected within the GUI
-	debugMode = true,
-	obfModSettings = {
-		minGGVer = gg.VERSION, -- GG version required
-		minGGBuildVer = gg.BUILD, -- minimal GG build version required
-		allowNewGGBuildVer = true, -- whether to allow newer GG version or not (uses gg.BUILD variable only)
-		ggPkg = "", -- what only gg package script will run
-		appPkg = "com.android.calculator", -- what only target package script will run
-		scriptExpiry = "20301111", -- YYYYMMDD order
-		scriptPW = "__P@$$w0rd123__", -- script password
-		stripAnnotations = false,
-		savePW = true, -- when enabled, the hashed password (not the actual pw) will be exported to a file with '.lt.cfg' extension
-		encryptStrings = false,
-		encryptTables = true,
-		text = {
-			failAppPkgInvalid = "[PkgScanner] This cheat is only allowed to run on \"..GGAppPkg..\", and the target app package name is \"..gg.getTargetPackage()",
-			failDatePassed    = "[GGRestrict] This script is expired at \"..GGPacDtm..\".",
-			failDeniedPkgs    = "[PkgScanner] Denied packages detected: ",
-			failGGPkgInvalid  = "[PkgScanner] This cheat is only allowed to run on \"..GGPkgNm..\", and your GG package name is \"..gg.PACKAGE..\". If you don\'t have GG with specific package name, you can use apktool.",
-			failGGVerBelow    = "[PkgScanner] This cheat is only allowed to run on \"..verTxt..\" \"..GGPacVer..\" (build \"..GGPacBuildVer..\"), and you\'re running on version \"..gg.VERSION..\" (build \"..gg.BUILD..\"). If you don\'t have GG with specific version, you can use apktool.",
-			failHookDetected  = "[VariableTracer] Usage of Function Hook detected! Please run the script in a normal environment.",
-			failIllegalMod    = "[TamperingChecker] Illegal external modification detected! Please run the script in a normal environment.",
-			failLogDetected   = "[DumpDetector] Usage of Logging detected! this may be caused by slow device, if you didn't expect this, please contact the script author.",
-			failInvalidPW     = "[Auth] Invalid Password!",
-			failInvalidPWFile = "[Auth] Invalid Password hash stored in LuaTools configuration!",
-			failRenamed       = "[FileWatcher] Renaming detected! sorry but you need to rename the script back to:",
-			yourFilename       = "your script name is: ",
-			errLTCfgFile			= "[Auth] Error when trying to execute LuaTools configuration file:",
-			promoteYourself   = "\tFollow me!\n\tGitHub: https://github.com/ABJ4403\n\tYouTube: https://youtube.com/@AyamGGoreng",
-			inputPass         = "[Auth] Input Password:",
-			warnPeeking       = "[NoPeek] Caught peeking values",
-		}
-	}
-}
--- Put your obfuscation module here (sorted by name)
-local obfMod = {
-	A_EncryptorSignature = function()return "local _=[[\n\n——————————————————————————————————————————————————\n|\n|  🛡 Encrypted by ABJ4403's Lua encryptor v"..cfg.VERSION.." (https://github.com/ABJ4403/LuaTools)\n|  Features:\n|  + Simple, no bloat.\n|  + Free & Open-Source, Licensed under GPL v3\n|  + Modable.\n|  + Table/string encryption.\n|  + Fast (No arbitrary slowdown, great optimization, local variables, isolated obfuscator modules makes sure global variables not polluted).\n|  + Optional Hard-Password requirement (with XOR encryption, we can use the password itself as a decryption key :) TODO...\n|  + Respects both the author & end user.\n|\n|  If you trying to open this encrypted file,\n|  well uhh... GL to even decrypt this XD (if you do)\n|  Otherwise if you think this isn't safe, Don't worry, the encryptor is open-source :D\n|  Go to https://github.com/ABJ4403/LuaTools for the source code\n|\n——————————————————————————————————————————————————\n\n\n]]"end,
-	B_PromoteYourself    = function()return "local _=[[\n\n"..cfg.obfModSettings.text.promoteYourself.."\n\n]]"end,
-	C_RestrictGGVer      = function()
-		local matcher,verTxt = 'gg.BUILD < GGPacBuildVer'
-		if not cfg.obfModSettings.allowNewGGBuildVer then
-			verTxt = 'version'
-			matcher = matcher..' or gg.VERSION ~= GGPacVer'
-		else
-			verTxt = 'minimum version'
+local gg,io,os = gg,io,os -- precache the usual call function (faster function call)
+-- Fake-semi-global variable just to make VirtGG perform better (anti hook global/locall variable detection
+local _g = {
+	tmp = {},
+	_randStr = function(len,byteFrom,byteTo)
+		local len=len or 8
+		local byteFrom=byteFrom or 128
+		local byteTo=byteTo or 255
+		local e=""
+		for i=1,len do
+			e=e..string.char(math.random(byteFrom,byteTo))
 		end
-		if cfg.obfModSettings.minGGVer ~= '' and cfg.obfModSettings.minGGBuildVer ~= '' then
-		--TODO - BUG: when encrypting a script 2nd time with this mod, it throws an error that it tries to `gg.BUILD < GGPacBuildVer` (when decrypted returned a whole different unreadable garbage, i think its caused by cfg.enc not reconfigured)
-			return 'local GGPacVer,GGPacBuildVer,verTxt='..cfg.enc(cfg.obfModSettings.minGGVer)..',tonumber('..cfg.enc(cfg.obfModSettings.minGGBuildVer)..'),"'..verTxt..'" if '..matcher..' then print("'..cfg.obfModSettings.text.failGGVerBelow..'")os.exit()end GGPacVer,GGPacBuildVer,verTxt=nil,nil,nil'
-		end
+		return e
 	end,
---[[D_RestrictGGPkg      = function()
-	if cfg.obfModSettings.ggPkg ~= '' then
-		return 'local GGPkgNm="'..cfg.enc(cfg.obfModSettings.ggPkg)..'" if gg.PACKAGE ~= GGPkgNm then print("'..cfg.obfModSettings.text.failGGPkgInvalid..'")os.exit()end GGPkgNm=nil'
-	end
-end,]]
---[[E_RestrictAppPkg     = function()
-	if cfg.obfModSettings.appPkg ~= '' then
-		return 'local GGAppPkg="'..cfg.enc(cfg.obfModSettings.appPkg)..'" if gg.getTargetPackage() ~= GGAppPkg then print("'..cfg.obfModSettings.text.failAppPkgInvalid..'")return end GGAppPkg=nil'
-	end
-end,]]
-	F_RestrictExpire     = function()
-		if cfg.obfModSettings.scriptExpiry ~= '' then
-			return 'local GGPacDtm='..cfg.enc(cfg.obfModSettings.scriptExpiry)..'if tonumber(os.date"%Y%m%d") > tonumber(GGPacDtm) then print("'..cfg.obfModSettings.text.failDatePassed..'")os.exit()end GGPacDtm=nil'
-		end
-	end,
-	G_RestrictPkgs       = function()return 'for _,v in ipairs{"sstool.only.com.sstool","com.hckeam.mjgql"} do if gg.isPackageInstalled(v)or gg.PACKAGE == v then print("'..cfg.obfModSettings.text.failDeniedPkgs..'"..v)os.exit()end end'end,
-	H_NoIllegalMod       = function()return 'if string.rep("a",2)~="aa" then print("'..cfg.obfModSettings.text.failIllegalMod..'")os.exit()end'end,
-	I_NoRename           = function()return 'local origFileName,fileName="'..cfg.fileChoice:gsub('^/.+/','')..'.enc.lua",gg.getFile():gsub("^/.+/","")if fileName ~= origFileName then print("'..cfg.obfModSettings.text.failRenamed..' "..origFileName..". '..cfg.obfModSettings.text.yourFilename..'"..fileName)os.exit()end'end,
-	J_AntiSSTool				 = function()return [[while nil do local i={}if(i.i)then;i.i=i.i(i)end end]]end,
-	K_HBXVpnObf					 = function()return [[while nil do local obf_srE6={nil,-nil % -nil,nil,-nil,nil,nil % -nil,-nil % nil,-nil}if #obf_srE6<0 then break end if obf_srE6[#obf_srE6]<0 then break end if obf_srE6[-nil] ~= #obf_srE6 & ~obf_srE6 then obf_srE6[#obf_srE6]=obf_srE6[-nil]()end if #obf_srE6<nil then obf_srE6[#obf_srE6]=obf_srE6[-nil%nil]()end goto X1 if nil or 0 then return end::X0::obf_P3oU()::X1::function obf_P3oU()goto X2 if nil or 0 then return end::X3::obf_P3oU:_()::X2::goto X3 end goto X0 for i=1,0 do obf_srE6="TQUILA1"end for i=1,0 do if nil then obf_srE6="obf"end end if nil then if true then else goto obf_s4df end if nil then else goto obf_s4df end if nil then else goto obf_s4df end::obf_s4df::end end]]end,
-	L_HookDetect				 = function()return 'local tmp if debug.getinfo(1).istailcall then print("'..cfg.obfModSettings.text.failHookDetected..'")os.exit()end for _,t in ipairs{gg,io,os,string,math,table,bit32,utf8}do if type(t) == "table" then for _,f in pairs(t)do if type(f) == "function" then tmp = debug.getinfo(f)if tmp.short_src ~= "[Java]" or tmp.source ~= "=[Java]" or tmp.what ~= "Java" or tmp.namewhat ~= "" or tmp.linedefined ~= -1 or tmp.lastlinedefined ~= -1 or tmp.currentline ~= -1 or tostring(f):match("function: @(.-):")then print("'..cfg.obfModSettings.text.failHookDetected..'")os.exit()end end end end end tmp=nil'end,
-	M_Password           = function()
-		if cfg.obfModSettings.scriptPW ~= '' then
-		--base code only have askPw function
-			local pwCode = 'askPw=function()CH=gg.prompt({"'..cfg.obfModSettings.text.inputPass..'"},nil,{"text"})if not CH or decode(CH[1])~=pwHash then print("'..cfg.obfModSettings.text.failInvalidPW..'")os.exit()end '
-			if cfg.obfModSettings.savePW then
-			--add pw file handler
-				pwCode = 'local ltFile,ltOutput=gg.getFile():gsub("%.enc%.lua$",".lua"):gsub("%.lua$",".lt.cfg")'..pwCode..' io.open(ltFile,"w"):write([====[-- ABJ4403 LuaTools Encryptor configuration\n-- Please do not edit this file just in case there is an encoding error while doing it\n-- If you really want to edit this file, use a good code editor that respects the encoding of a file\nreturn {\n--Password hash (to avoid typing the same password again)\n	password_hash = "]====]..pwHash..[====["\n}]====]):close()end ltOutput,err=loadfile(ltFile)if ltOutput and not err then ltOutput=ltOutput()if type(ltOutput)~="table"or ltOutput.password_hash~=pwHash then print("'..cfg.obfModSettings.text.failInvalidPWFile..'")askPw()end else if err then print("'..cfg.obfModSettings.text.errLTCfgFile..'",err)end askPw()end'
-			else
-			--just ask pw
-				pwCode = pwCode..'end askPw()'
+	--XOR encryption
+	_xdenc_XOR = function(iv,key)local iv_,key_,i,stringChar={iv:byte(0,-1)},{key:byte(0,-1)},0,string.char local r=iv:gsub(".",function()i=i+1 return stringChar(iv_[i]~key_[(i%#key_)+1])end)return r end,
+	_dec_wrap_XOR = function(key)return'(iv)local iv,key,stringChar={iv:byte(0,-1)},{([==['..key..']==]):byte(0,-1)},string.char for i=1,#iv do iv[i]=stringChar(iv[i]~key[(i%#key)+1]) end return table.concat(iv)'end,
+	_enc_wrap_XOR = function(key)
+		_g.dec_wrap_XOR = _g.dec_wrap_XOR(key)
+		local key = {key:byte(0,-1)}
+		return function(str)
+			-- dont encrypt if nothing gets passed
+			str = tostring(str)
+			if str == '' then return [[""]] end
+			str = {str:byte(0,-1)}
+			for i=1,#str do
+				str[i] = string.char(str[i] ~ key[(i % #key) + 1])
 			end
-			pwCode = 'local pwHash,askPw,CH,err="'..cfg.xdenc(cfg.obfModSettings.scriptPW,cfg.obfModSettings.pwHash)..'" '..pwCode..' CH,askPw,pwHash,err=nil,nil,nil,nil' -- code to clear everything
-			return pwCode
+			-- parenthesis around decode is to prevent parsing error in cases like: `return'a'` > `returndecode(..)`
+			return '(decode([==['..table.concat(str)..']==]))'
 		end
 	end,
-	N_Welcome            = function()return [[gg.toast("🛡 Encrypted by ABJ4403's Lua encryptor v]]..cfg.VERSION..[[. Please wait...")]]end,
-	O_AntiLoad           = function()return 'local load,str=load,function()local _=nil end for i=1,1e3 do load(str)end'end,
-	P_NoPeek             = function()return 'gg.searchNumber=(function()local ggSearchNumber=gg.searchNumber return function(...)if gg.isVisible()then gg.setVisible(false)gg.clearList()print("'..cfg.obfModSettings.text.warnPeeking..'")end ggSearchNumber(...)if gg.isVisible()then gg.setVisible(false)gg.clearList()print("'..cfg.obfModSettings.text.warnPeeking..'")end end end)()'end,
-	Q_SpamLog            = function()return 'local ot,dt,LOG,t1,t2=os.time,debug.traceback,("\0\4\8\255"):rep(1e3)t1=ot()for i=1,2e3 do dt(1,nil,LOG)end t2=ot()if t2-t1>1 then print("'..cfg.obfModSettings.text.failLogDetected..'")os.exit()end ot,dt,t1,t2,LOG=nil,nil,nil,nil,nil'end,
---R_BigLASM            = function()return "local "..('_="<<===---- Chunk Obfuscator ----===>>" '):rep(30000)..('goto _ '):rep(30000)..("(function()end)() "):rep(30000)..'::_:: _=nil'end, -- Makes assembly file really big. Chunk obfuscator?
---x_cHeaphumanVerify   = function()return "local tmp=math.random(1000,9999)local CH=gg.prompt({'[cHeapumanVerification] Input this number to make sure that you\\'re human: '..tmp},nil,{'text'})if not CH or tonumber(CH[1]) ~= tmp then print('"..cfg.obfModSettings.text.failInvalidPW.."')os.exit()end CH=nil"end,
---x_cHeaphumanVerify2  = function()return 'local t,r,c={"Apple","Banana","Island","Cat","Dog","Octopus","Bird","Penguin","Panda","Pizza","Donut","Candy","Tea","Shrimp","Car","House","Rocket","Orange","Lemon","Mushroom","Fox","Flower"},{math.random(1,22),math.random(1,22),math.random(1,22),math.random(1,3)}c=gg.alert("[cHeapumanVerification] Choose the corrent answer by pressing the buttons below.\\nWhat is the meaning of this emoji: "..({"🍎","🍌","🏝","🐈","🐕","🐙","🐦","🐧","🐼","🍕","🍩","🍬","🍵","🍤","🚗","🏘","🚀","🍊","🍋","🍄","🦊","🌻"})[r[r[4]]],t[r[1]],t[r[2]],t[r[3]])if not c or r[4]~=c then print("'..cfg.obfModSettings.text.failInvalidPW..'")os.exit()end'end,
-}
--- Put your deobfuscation patches here (name can be whatever. when you modify below, you might want to modify `wrapper_patches()` if you add/remove entries in here)
--- Important: lua doesnt use RegEx. More info: https://www.lua.org/manual/5.1/manual.html#5.4.1
--- Also, ^$()%.[]*+-? is magic char, escape those using % instead of \
-local deobfPatch = {
-	selfDecrypt = {
- -- For self-decrypt
+	cfg = {
+		-- Allow user freedom of changing whatever they want
+		-- Please DO NOT encrypt this script, because we like to change configuration like below
+		-- if you encrypt this script, then you can't customize stuff here.
+		-- you will need a code editor (preferably the one that has syntax-highlighting & code-folding, like Acode), and Lua knowledge for customizing these stuff below...
+		VERSION = "2.7", -- you can ignore this, its just for defining script version :)
+		scriptPath = gg.getFile():gsub('.lua$',''), -- strip the .lua for .conf and stuff,
+	--fileChoice = '/sdcard/Notes/test', -- dummy, replaced whenever any file is selected within the GUI
+		debugMode = true,
+		obfOpts = {
+			minGGVer = gg.VERSION, -- GG version required
+			minGGBuildVer = gg.BUILD, -- minimal GG build version required
+			allowNewGGBuildVer = true, -- whether to allow newer GG version or not (uses gg.BUILD variable only)
+			ggPkg = "", -- what only gg package script will run
+			appPkg = "", -- what only target package script will run
+			scriptExpiry = "20301111", -- YYYYMMDD order
+			scriptPW = "1234", -- script password
+			stripAnnotations = false,
+			savePW = true, -- when enabled, the hashed password (not the actual pw) will be exported to a file with '.lt.cfg' extension
+			encryptStrings = false,
+			encryptTables = true,
+			text = {
+				failAppPkgInvalid = "[PkgScanner] This cheat is only allowed to run on \"..GGAppPkg..\", and the target app package name is \"..gg.getTargetPackage()",
+				failDatePassed    = "[GGRestrict] This script is expired at \"..GGPacDtm..\".",
+				failDeniedPkgs    = "[PkgScanner] Denied packages detected: ",
+				failGGPkgInvalid  = "[PkgScanner] This cheat is only allowed to run on \"..GGPkgNm..\", and your GG package name is \"..gg.PACKAGE..\". If you don\'t have GG with specific package name, you can use apktool.",
+				failGGVerBelow    = "[PkgScanner] This cheat is only allowed to run on \"..verTxt..\" \"..GGPacVer..\" (build \"..GGPacBuildVer..\"), and you\'re running on version \"..gg.VERSION..\" (build \"..gg.BUILD..\"). If you don\'t have GG with specific version, you can use apktool.",
+				failHookDetected  = "[VariableTracer] Usage of Function Hook detected! Please run the script in a normal environment.",
+				failIllegalMod    = "[TamperingChecker] Illegal external modification detected! Please run the script in a normal environment.",
+				failLogDetected   = "[DumpDetector] Usage of Logging detected! this may be caused by slow device, if you didn't expect this, please contact the script author.",
+				failInvalidPW     = "[Auth] Invalid Password!",
+				failInvalidPWFile = "[Auth] Invalid Password hash stored in LuaTools configuration!",
+				failRenamed       = "[FileWatcher] Renaming detected! sorry but you need to rename the script back to:",
+				yourFilename       = "your script name is: ",
+				errLTCfgFile			= "[Auth] Error when trying to execute LuaTools configuration file:",
+				promoteYourself   = "\tFollow me!\n\tGitHub: https://github.com/ABJ4403\n\tYouTube: https://youtube.com/@AyamGGoreng",
+				inputPass         = "[Auth] Input Password:",
+				warnPeeking       = "[NoPeek] Caught peeking values",
+			}
+		},
+		obfMod = {
+			-- Put your obfuscation module here (sorted by name)
+			A_EncryptorSignature = function()return "local _=[[\n\n——————————————————————————————————————————————————\n|\n|  🛡 Encrypted by ABJ4403's Lua encryptor v".._g.cfg.VERSION.." (https://github.com/ABJ4403/LuaTools)\n|  Features:\n|  + Simple, no bloat.\n|  + Free & Open-Source, Licensed under GPL v3\n|  + Modable.\n|  + Table/string encryption.\n|  + Fast (No arbitrary slowdown, great optimization, local variables, isolated obfuscator modules makes sure global variables not polluted).\n|  + Optional Hard-Password requirement (with XOR encryption, we can use the password itself as a decryption key :) TODO...\n|  + Respects both the author & end user.\n|\n|  If you trying to open this encrypted file,\n|  well uhh... GL to even decrypt this XD (if you do)\n|  Otherwise if you think this isn't safe, Don't worry, the encryptor is open-source :D\n|  Go to https://github.com/ABJ4403/LuaTools for the source code\n|\n——————————————————————————————————————————————————\n\n\n]]"end,
+			B_PromoteYourself    = function()return "local _=[[\n\n".._g.cfg.obfOpts.text.promoteYourself.."\n\n]]"end,
+			C_RestrictGGVer      = function()
+				print(_g.cfg.obfOpts.minGGVer,_g.cfg.obfOpts.minGGBuildVer)
+				local matcher,verTxt = 'gg.BUILD < GGPacBuildVer'
+				if not _g.cfg.obfOpts.allowNewGGBuildVer then
+					verTxt = 'version'
+					matcher = matcher..' or gg.VERSION ~= GGPacVer'
+				else
+					verTxt = 'minimum version'
+				end
+				if _g.cfg.obfOpts.minGGVer ~= '' and _g.cfg.obfOpts.minGGBuildVer ~= '' then
+				--TODO - BUG: when encrypting a script 2nd time with this mod, it throws an error that it tries to `gg.BUILD < GGPacBuildVer` (when decrypted returned a whole different unreadable garbage, i think its caused by _g.cfg.enc not reconfigured)
+					return 'local GGPacVer,GGPacBuildVer,verTxt='.._g.cfg.enc(_g.cfg.obfOpts.minGGVer)..',tonumber('.._g.cfg.enc(_g.cfg.obfOpts.minGGBuildVer)..'),"'..verTxt..'" if '..matcher..' then print("'.._g.cfg.obfOpts.text.failGGVerBelow..'")os.exit()end GGPacVer,GGPacBuildVer,verTxt=nil,nil,nil'
+				end
+			end,
+		--[[D_RestrictGGPkg      = function()
+			if _g.cfg.obfOpts.ggPkg ~= '' then
+				return 'local GGPkgNm="'.._g.cfg.enc(_g.cfg.obfOpts.ggPkg)..'" if gg.PACKAGE ~= GGPkgNm then print("'.._g.cfg.obfOpts.text.failGGPkgInvalid..'")os.exit()end GGPkgNm=nil'
+			end
+		end,]]
+		--[[E_RestrictAppPkg     = function()
+			if _g.cfg.obfOpts.appPkg ~= '' then
+				return 'local GGAppPkg="'.._g.cfg.enc(_g.cfg.obfOpts.appPkg)..'" if gg.getTargetPackage() ~= GGAppPkg then print("'.._g.cfg.obfOpts.text.failAppPkgInvalid..'")return end GGAppPkg=nil'
+			end
+		end,]]
+			F_RestrictExpire     = function()
+				if _g.cfg.obfOpts.scriptExpiry ~= '' then
+					return 'local GGPacDtm='.._g.cfg.enc(_g.cfg.obfOpts.scriptExpiry)..'if tonumber(os.date"%Y%m%d") > tonumber(GGPacDtm) then print("'.._g.cfg.obfOpts.text.failDatePassed..'")os.exit()end GGPacDtm=nil'
+				end
+			end,
+			G_RestrictPkgs       = function()return 'for _,v in ipairs{"sstool.only.com.sstool","com.hckeam.mjgql"} do if gg.isPackageInstalled(v)or gg.PACKAGE == v then print("'.._g.cfg.obfOpts.text.failDeniedPkgs..'"..v)os.exit()end end'end,
+			H_NoIllegalMod       = function()return 'if string.rep("a",2)~="aa" then print("'.._g.cfg.obfOpts.text.failIllegalMod..'")os.exit()end'end,
+			I_NoRename           = function()return 'local origFileName,fileName="'.._g.cfg.fileChoice:gsub('^/.+/','')..'.enc.lua",gg.getFile():gsub("^/.+/","")if fileName ~= origFileName then print("'.._g.cfg.obfOpts.text.failRenamed..' "..origFileName..". '.._g.cfg.obfOpts.text.yourFilename..'"..fileName)os.exit()end'end,
+			J_AntiSSTool				 = function()return [[while nil do local i={}if(i.i)then;i.i=i.i(i)end end]]end,
+			K_HBXVpnObf					 = function()return [[while nil do local obf_srE6={nil,-nil % -nil,nil,-nil,nil,nil % -nil,-nil % nil,-nil}if #obf_srE6<0 then break end if obf_srE6[#obf_srE6]<0 then break end if obf_srE6[-nil] ~= #obf_srE6 & ~obf_srE6 then obf_srE6[#obf_srE6]=obf_srE6[-nil]()end if #obf_srE6<nil then obf_srE6[#obf_srE6]=obf_srE6[-nil%nil]()end goto X1 if nil or 0 then return end::X0::obf_P3oU()::X1::function obf_P3oU()goto X2 if nil or 0 then return end::X3::obf_P3oU:_()::X2::goto X3 end goto X0 for i=1,0 do obf_srE6="TQUILA1"end for i=1,0 do if nil then obf_srE6="obf"end end if nil then if true then else goto obf_s4df end if nil then else goto obf_s4df end if nil then else goto obf_s4df end::obf_s4df::end end]]end,
+			L_HookDetect				 = function()return 'local tmp if debug.getinfo(1).istailcall then print("'.._g.cfg.obfOpts.text.failHookDetected..'")os.exit()end for _,t in ipairs{gg,io,os,string,math,table,bit32,utf8}do if type(t) == "table" then for _,f in pairs(t)do if type(f) == "function" then tmp = debug.getinfo(f)if tmp.short_src ~= "[Java]" or tmp.source ~= "=[Java]" or tmp.what ~= "Java" or tmp.namewhat ~= "" or tmp.linedefined ~= -1 or tmp.lastlinedefined ~= -1 or tmp.currentline ~= -1 or tostring(f):match("function: @(.-):")then print("'.._g.cfg.obfOpts.text.failHookDetected..'")os.exit()end end end end end tmp=nil'end,
+			M_Password           = function()
+				if _g.cfg.obfOpts.scriptPW ~= '' then
+				--base code only have askPw function
+					local pwCode = 'askPw=function()CH=gg.prompt({"'.._g.cfg.obfOpts.text.inputPass..'"},nil,{"text"})if not CH or decode(CH[1])~=pwHash then print("'.._g.cfg.obfOpts.text.failInvalidPW..'")os.exit()end '
+					if _g.cfg.obfOpts.savePW then
+					--add pw file handler
+						pwCode = 'local ltFile,ltOutput=gg.getFile():gsub("%.enc%.lua$",".lua"):gsub("%.lua$",".lt.cfg")'..pwCode..' io.open(ltFile,"w"):write([====[-- ABJ4403 LuaTools Encryptor configuration\n-- Please do not edit this file just in case there is an encoding error while doing it\n-- If you really want to edit this file, use a good code editor that respects the encoding of a file\nreturn {\n--Password hash (to avoid typing the same password again)\n	password_hash = "]====]..pwHash..[====["\n}]====]):close()end ltOutput,err=loadfile(ltFile)if ltOutput and not err then ltOutput=ltOutput()if type(ltOutput)~="table"or ltOutput.password_hash~=pwHash then print("'.._g.cfg.obfOpts.text.failInvalidPWFile..'")askPw()end else if err then print("'.._g.cfg.obfOpts.text.errLTCfgFile..'",err)end askPw()end'
+					else
+					--just ask pw
+						pwCode = pwCode..'end askPw()'
+					end
+					pwCode = 'local pwHash,askPw,CH,err="'.._g.cfg.xdenc(_g.cfg.obfOpts.scriptPW,_g.cfg.obfOpts.pwHash)..'" '..pwCode..' CH,askPw,pwHash,err=nil,nil,nil,nil' -- code to clear everything
+					return pwCode
+				end
+			end,
+			N_Welcome            = function()return [[gg.toast("🛡 Encrypted by ABJ4403's Lua encryptor v]].._g.cfg.VERSION..[[. Please wait...")]]end,
+			O_AntiLoad           = function()return 'local load,str=load,function()local _=nil end for i=1,1e3 do load(str)end'end,
+			P_NoPeek             = function()return 'gg.searchNumber=(function()local ggSearchNumber=gg.searchNumber return function(...)if gg.isVisible()then gg.setVisible(false)gg.clearList()print("'.._g.cfg.obfOpts.text.warnPeeking..'")end ggSearchNumber(...)if gg.isVisible()then gg.setVisible(false)gg.clearList()print("'.._g.cfg.obfOpts.text.warnPeeking..'")end end end)()'end,
+			Q_SpamLog            = function()return 'local ot,dt,LOG,t1,t2=os.time,debug.traceback,("\0\255"):rep(1e3)t1=ot()for i=1,2e3 do dt(1,nil,LOG)end t2=ot()if t2-t1>1 then print("'.._g.cfg.obfOpts.text.failLogDetected..'")os.exit()end ot,dt,t1,t2,LOG=nil,nil,nil,nil,nil'end,
+		--R_BigLASM            = function()return "local "..('_="<<===---- Chunk Obfuscator ----===>>" '):rep(30000)..('goto _ '):rep(30000)..("(function()end)() "):rep(30000)..'::_:: _=nil'end, -- Makes assembly file really big. Chunk obfuscator?
+		--x_cHeaphumanVerify   = function()return "local tmp=math.random(1000,9999)local CH=gg.prompt({'[cHeapumanVerification] Input this number to make sure that you\\'re human: '..tmp},nil,{'text'})if not CH or tonumber(CH[1]) ~= tmp then print('".._g.cfg.obfOpts.text.failInvalidPW.."')os.exit()end CH=nil"end,
+		--x_cHeaphumanVerify2  = function()return 'local t,r,c={"Apple","Banana","Island","Cat","Dog","Octopus","Bird","Penguin","Panda","Pizza","Donut","Candy","Tea","Shrimp","Car","House","Rocket","Orange","Lemon","Mushroom","Fox","Flower"},{math.random(1,22),math.random(1,22),math.random(1,22),math.random(1,3)}c=gg.alert("[cHeapumanVerification] Choose the corrent answer by pressing the buttons below.\\nWhat is the meaning of this emoji: "..({"🍎","🍌","🏝","🐈","🐕","🐙","🐦","🐧","🐼","🍕","🍩","🍬","🍵","🍤","🚗","🏘","🚀","🍊","🍋","🍄","🦊","🌻"})[r[r[4]]],t[r[1]],t[r[2]],t[r[3]])if not c or r[4]~=c then print("'.._g.cfg.obfOpts.text.failInvalidPW..'")os.exit()end'end,
+		},
+		deobfPatch = {
+			-- Put your deobfuscation patches here (name can be whatever. when you modify below, you might want to modify `wrapper_patches()` if you add/remove entries in here)
+			-- Important: lua doesnt use RegEx. More info: https://www.lua.org/manual/5.1/manual.html#5.4.1
+			-- Also, ^$()%.[]*+-? is magic char, escape those using % instead of \
+			selfDecrypt = {
+		 -- For self-decrypt
 
- -- Anti hook (not work??)
-		{'LOADNIL v%d+%.%.v%d+\nGETTABUP v%d+ u0 "debug"\nGETTABLE v%d+ v%d+ "getinfo"\nLOADK v%d+ 1\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nGETTABLE v%d+ v%d+ "istailcall"\nTEST v%d+ 0\nJMP :goto_%d+  ; %+6 ↓\nGETTABUP v%d+ u0 "print"\nLOADK v%d+ "[^\n]-"\nCALL v%d+%.%.v%d+\nGETTABUP v%d+ u0 "os"\nGETTABLE v%d+ v%d+ "exit"\nCALL v%d+%.%.v%d+\n:goto_%d+\nGETTABUP v%d+ u0 "ipairs"\nNEWTABLE v%d+ 8 0\nGETTABUP v%d+ u0 "gg"\nGETTABUP v%d+ u0 "io"\nGETTABUP v%d+ u0 "os"\nGETTABUP v%d+ u0 "string"\nGETTABUP v%d+ u0 "math"\nGETTABUP v%d+ u0 "table"\nGETTABUP v%d+ u0 "bit32"\nGETTABUP v%d+ u0 "utf8"\nSETLIST v%d+%.%.v%d+ 1\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nJMP :goto_%d+  ; %+56 ↓\n:goto_%d+\nGETTABUP v%d+ u0 "type"\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nEQ 0 v%d+ "table"\nJMP :goto_%d+  ; %+51 ↓\nGETTABUP v%d+ u0 "pairs"\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nJMP :goto_%d+  ; %+45 ↓\n:goto_%d+\nGETTABUP v%d+ u0 "type"\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nEQ 0 v%d+ "function"\nJMP :goto_%d+  ; %+40 ↓\nGETTABUP v%d+ u0 "debug"\nGETTABLE v%d+ v%d+ "getinfo"\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nMOVE v%d+ v%d+\nGETTABLE v%d+ v%d+ "short_src"\nEQ 0 v%d+ "[Java]"\nJMP :goto_%d+  ; %+26 ↓\nGETTABLE v%d+ v%d+ "source"\nEQ 0 v%d+ "=[Java]"\nJMP :goto_%d+  ; %+23 ↓\nGETTABLE v%d+ v%d+ "what"\nEQ 0 v%d+ "Java"\nJMP :goto_%d+  ; %+20 ↓\nGETTABLE v%d+ v%d+ "namewhat"\nEQ 0 v%d+ ""\nJMP :goto_%d+  ; %+17 ↓\nGETTABLE v%d+ v%d+ "linedefined"\nEQ 0 v%d+ %-1\nJMP :goto_%d+  ; %+14 ↓\nGETTABLE v%d+ v%d+ "lastlinedefined"\nEQ 0 v%d+ %-1\nJMP :goto_%d+  ; %+11 ↓\nGETTABLE v%d+ v%d+ "currentline"\nEQ 0 v%d+ %-1\nJMP :goto_%d+  ; %+8 ↓\nGETTABUP v%d+ u0 "tostring"\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSELF v%d+ v%d+ "match"\nLOADK v%d+ "function: @%(%.%-%):"\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nTEST v%d+ 0\nJMP :goto_%d+  ; %+6 ↓\n:goto_%d+\nGETTABUP v%d+ u0 "print"\nLOADK v%d+ "[^\n]-"\nCALL v%d+%.%.v%d+\nGETTABUP v%d+ u0 "os"\nGETTABLE v%d+ v%d+ "exit"\nCALL v%d+%.%.v%d+\n:goto_%d+\nTFORCALL v%d+%.%.v%d+\nTFORLOOP v%d+ :goto_%d+  ; %-47 ↑\n; %.end local v%d+ "%(for generator%)"\n; %.end local v%d+ "%(for state%)"\n; %.end local v%d+ "%(for control%)"\n; %.end local v%d+ "%(for key%)"\n:goto_%d+\nTFORCALL v%d+%.%.v%d+\nTFORLOOP v%d+ :goto_%d+  ; %-58 ↑\n; %.end local v%d+ "%(for generator%)"\n; %.end local v%d+ "%(for state%)"\n; %.end local v%d+ "%(for control%)"\n; %.end local v%d+ "%(for key%)"\nLOADNIL v%d+%.%.v%d+\n',''},
+		 -- Anti hook (not work??)
+				{'LOADNIL v%d+%.%.v%d+\nGETTABUP v%d+ u0 "debug"\nGETTABLE v%d+ v%d+ "getinfo"\nLOADK v%d+ 1\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nGETTABLE v%d+ v%d+ "istailcall"\nTEST v%d+ 0\nJMP :goto_%d+  ; %+6 ↓\nGETTABUP v%d+ u0 "print"\nLOADK v%d+ "[^\n]-"\nCALL v%d+%.%.v%d+\nGETTABUP v%d+ u0 "os"\nGETTABLE v%d+ v%d+ "exit"\nCALL v%d+%.%.v%d+\n:goto_%d+\nGETTABUP v%d+ u0 "ipairs"\nNEWTABLE v%d+ 8 0\nGETTABUP v%d+ u0 "gg"\nGETTABUP v%d+ u0 "io"\nGETTABUP v%d+ u0 "os"\nGETTABUP v%d+ u0 "string"\nGETTABUP v%d+ u0 "math"\nGETTABUP v%d+ u0 "table"\nGETTABUP v%d+ u0 "bit32"\nGETTABUP v%d+ u0 "utf8"\nSETLIST v%d+%.%.v%d+ 1\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nJMP :goto_%d+  ; %+56 ↓\n:goto_%d+\nGETTABUP v%d+ u0 "type"\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nEQ 0 v%d+ "table"\nJMP :goto_%d+  ; %+51 ↓\nGETTABUP v%d+ u0 "pairs"\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nJMP :goto_%d+  ; %+45 ↓\n:goto_%d+\nGETTABUP v%d+ u0 "type"\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nEQ 0 v%d+ "function"\nJMP :goto_%d+  ; %+40 ↓\nGETTABUP v%d+ u0 "debug"\nGETTABLE v%d+ v%d+ "getinfo"\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nMOVE v%d+ v%d+\nGETTABLE v%d+ v%d+ "short_src"\nEQ 0 v%d+ "[Java]"\nJMP :goto_%d+  ; %+26 ↓\nGETTABLE v%d+ v%d+ "source"\nEQ 0 v%d+ "=[Java]"\nJMP :goto_%d+  ; %+23 ↓\nGETTABLE v%d+ v%d+ "what"\nEQ 0 v%d+ "Java"\nJMP :goto_%d+  ; %+20 ↓\nGETTABLE v%d+ v%d+ "namewhat"\nEQ 0 v%d+ ""\nJMP :goto_%d+  ; %+17 ↓\nGETTABLE v%d+ v%d+ "linedefined"\nEQ 0 v%d+ %-1\nJMP :goto_%d+  ; %+14 ↓\nGETTABLE v%d+ v%d+ "lastlinedefined"\nEQ 0 v%d+ %-1\nJMP :goto_%d+  ; %+11 ↓\nGETTABLE v%d+ v%d+ "currentline"\nEQ 0 v%d+ %-1\nJMP :goto_%d+  ; %+8 ↓\nGETTABUP v%d+ u0 "tostring"\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSELF v%d+ v%d+ "match"\nLOADK v%d+ "function: @%(%.%-%):"\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nTEST v%d+ 0\nJMP :goto_%d+  ; %+6 ↓\n:goto_%d+\nGETTABUP v%d+ u0 "print"\nLOADK v%d+ "[^\n]-"\nCALL v%d+%.%.v%d+\nGETTABUP v%d+ u0 "os"\nGETTABLE v%d+ v%d+ "exit"\nCALL v%d+%.%.v%d+\n:goto_%d+\nTFORCALL v%d+%.%.v%d+\nTFORLOOP v%d+ :goto_%d+  ; %-47 ↑\n; %.end local v%d+ "%(for generator%)"\n; %.end local v%d+ "%(for state%)"\n; %.end local v%d+ "%(for control%)"\n; %.end local v%d+ "%(for key%)"\n:goto_%d+\nTFORCALL v%d+%.%.v%d+\nTFORLOOP v%d+ :goto_%d+  ; %-58 ↑\n; %.end local v%d+ "%(for generator%)"\n; %.end local v%d+ "%(for state%)"\n; %.end local v%d+ "%(for control%)"\n; %.end local v%d+ "%(for key%)"\nLOADNIL v%d+%.%.v%d+\n',''},
 
- -- Remove Password (failed: weird inst/func placements; 1.regular,2.exportpw)
-		{'LOADK v%d+ "[^\n]-"\nLOADNIL v%d+%.%.v%d+\nCLOSURE v%d+ F%d+\nMOVE v%d+ v%d+\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+\nLOADNIL v%d+%.%.v%d+\nMOVE v%d+ v%d+\nMOVE v%d+ v%d+\nMOVE v%d+ v%d+\nRETURN\nGETTABUP v%d+ u1 "gg"\nGETTABLE v%d+ v%d+ "prompt"\nNEWTABLE v%d+ 1 0\nLOADK v%d+ "[^\n]-"\nSETLIST v%d+%.%.v%d+ 1\nLOADNIL v%d+%.%.v%d+\nNEWTABLE v%d+ 1 0\nLOADK v%d+ "text"\nSETLIST v%d+%.%.v%d+ 1\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSETUPVAL v%d+ u0\nGETUPVAL v%d+ u0\nTEST v%d+ 0\nJMP :goto_%d+  ; %+6 ↓\nGETTABUP v%d+ u1 "decode"\nGETTABUP v%d+ u0 1\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nGETUPVAL v%d+ u2\nEQ 1 v%d+ v%d+\nJMP :goto_%d+  ; %+6 ↓\n:goto_%d+\nGETTABUP v%d+ u1 "print"\nLOADK v%d+ "[^\n]-"\nCALL v%d+%.%.v%d+\nGETTABUP v%d+ u1 "os"\nGETTABLE v%d+ v%d+ "exit"\nCALL v%d+%.%.v%d+\n:goto_%d+\n',''},
-		{'LOADK v%d+ "[^\n]-"\nLOADNIL v%d+%.%.v%d+\nGETTABUP v%d+ u0 "gg"\nGETTABLE v%d+ v%d+ "getFile"\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSELF v%d+ v%d+ "gsub"\nLOADK v%d+ "%%.enc%%.lua$"\nLOADK v%d+ "%.lua"\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSELF v%d+ v%d+ "gsub"\nLOADK v%d+ "%%.lua$"\nLOADK v%d+ "%.lt%.cfg"\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nCLOSURE v%d+ F%d+\nMOVE v%d+ v%d+\nGETTABUP v%d+ u0 "loadfile"\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nMOVE v%d+ v%d+\nMOVE v%d+ v%d+\nTEST v%d+ 0\nJMP :goto_%d+  ; %+19 ↓\nTEST v%d+ 1\nJMP :goto_%d+  ; %+17 ↓\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nMOVE v%d+ v%d+\nGETTABUP v%d+ u0 "type"\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nEQ 0 v%d+ "table"\nJMP :goto_%d+  ; %+3 ↓\nGETTABLE v%d+ v%d+ "password_hash"\nEQ 1 v%d+ v%d+\nJMP :goto_%d+  ; %+14 ↓\n:goto_%d+\nGETTABUP v%d+ u0 "print"\nLOADK v%d+ "[^\n]-"\nCALL v%d+%.%.v%d+\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+\nJMP :goto_%d+  ; %+8 ↓\n:goto_%d+\nTEST v%d+ 0\nJMP :goto_%d+  ; %+4 ↓\nGETTABUP v%d+ u0 "print"\nLOADK v%d+ "[^\n]-"\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+\n:goto_%d+\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+\n:goto_%d+\nLOADNIL v%d+%.%.v%d+\nLOADNIL v%d+%.%.v%d+\nMOVE v%d+ v%d+\nMOVE v%d+ v%d+\nMOVE v%d+ v%d+\nRETURN\n%.func F%d+ ; 4 upvalues, 0 locals, 17 constants, 0 funcs\n%.source ""\n%.linedefined 0\n%.lastlinedefined 0\n%.numparams 0\n%.is_vararg 0\n%.maxstacksize 5\n%.upval v%d+ nil ; u0\n%.upval u0 nil ; u1\n%.upval v%d+ nil ; u2\n%.upval v%d+ nil ; u3\n%.upval v%d+ nil ; u4\nGETTABUP v%d+ u1 "gg"\nGETTABLE v%d+ v%d+ "prompt"\nNEWTABLE v%d+ 1 0\nLOADK v%d+ "[^\n]-"\nSETLIST v%d+%.%.v%d+ 1\nLOADNIL v%d+%.%.v%d+\nNEWTABLE v%d+ 1 0\nLOADK v%d+ "text"\nSETLIST v%d+%.%.v%d+ 1\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSETUPVAL v%d+ u0\nGETUPVAL v%d+ u0\nTEST v%d+ 0\nJMP :goto_%d+  ; %+6 ↓\nGETTABUP v%d+ u1 "decode"\nGETTABUP v%d+ u0 1\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nGETUPVAL v%d+ u2\nEQ 1 v%d+ v%d+\nJMP :goto_%d+  ; %+6 ↓\n:goto_%d+\nGETTABUP v%d+ u1 "print"\nLOADK v%d+ "[^\n]-"\nCALL v%d+%.%.v%d+\nGETTABUP v%d+ u1 "os"\nGETTABLE v%d+ v%d+ "exit"\nCALL v%d+%.%.v%d+\n:goto_%d+\nGETTABUP v%d+ u1 "io"\nGETTABLE v%d+ v%d+ "open"\nGETUPVAL v%d+ u3\nLOADK v%d+ "w"\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSELF v%d+ v%d+ "write"\nLOADK v%d+ "[^\n]-"\nGETUPVAL v%d+ u2\nLOADK v%d+ "[^\n]-"\nCONCAT v%d+ v%d+%.%.v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSELF v%d+ v%d+ "close"\nCALL v%d+%.%.v%d+\n',''},
+		 -- Remove Password (failed: weird inst/func placements; 1.regular,2.exportpw)
+				{'LOADK v%d+ "[^\n]-"\nLOADNIL v%d+%.%.v%d+\nCLOSURE v%d+ F%d+\nMOVE v%d+ v%d+\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+\nLOADNIL v%d+%.%.v%d+\nMOVE v%d+ v%d+\nMOVE v%d+ v%d+\nMOVE v%d+ v%d+\nRETURN\nGETTABUP v%d+ u1 "gg"\nGETTABLE v%d+ v%d+ "prompt"\nNEWTABLE v%d+ 1 0\nLOADK v%d+ "[^\n]-"\nSETLIST v%d+%.%.v%d+ 1\nLOADNIL v%d+%.%.v%d+\nNEWTABLE v%d+ 1 0\nLOADK v%d+ "text"\nSETLIST v%d+%.%.v%d+ 1\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSETUPVAL v%d+ u0\nGETUPVAL v%d+ u0\nTEST v%d+ 0\nJMP :goto_%d+  ; %+6 ↓\nGETTABUP v%d+ u1 "decode"\nGETTABUP v%d+ u0 1\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nGETUPVAL v%d+ u2\nEQ 1 v%d+ v%d+\nJMP :goto_%d+  ; %+6 ↓\n:goto_%d+\nGETTABUP v%d+ u1 "print"\nLOADK v%d+ "[^\n]-"\nCALL v%d+%.%.v%d+\nGETTABUP v%d+ u1 "os"\nGETTABLE v%d+ v%d+ "exit"\nCALL v%d+%.%.v%d+\n:goto_%d+\n',''},
+				{'LOADK v%d+ "[^\n]-"\nLOADNIL v%d+%.%.v%d+\nGETTABUP v%d+ u0 "gg"\nGETTABLE v%d+ v%d+ "getFile"\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSELF v%d+ v%d+ "gsub"\nLOADK v%d+ "%%.enc%%.lua$"\nLOADK v%d+ "%.lua"\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSELF v%d+ v%d+ "gsub"\nLOADK v%d+ "%%.lua$"\nLOADK v%d+ "%.lt%.cfg"\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nCLOSURE v%d+ F%d+\nMOVE v%d+ v%d+\nGETTABUP v%d+ u0 "loadfile"\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nMOVE v%d+ v%d+\nMOVE v%d+ v%d+\nTEST v%d+ 0\nJMP :goto_%d+  ; %+19 ↓\nTEST v%d+ 1\nJMP :goto_%d+  ; %+17 ↓\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nMOVE v%d+ v%d+\nGETTABUP v%d+ u0 "type"\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nEQ 0 v%d+ "table"\nJMP :goto_%d+  ; %+3 ↓\nGETTABLE v%d+ v%d+ "password_hash"\nEQ 1 v%d+ v%d+\nJMP :goto_%d+  ; %+14 ↓\n:goto_%d+\nGETTABUP v%d+ u0 "print"\nLOADK v%d+ "[^\n]-"\nCALL v%d+%.%.v%d+\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+\nJMP :goto_%d+  ; %+8 ↓\n:goto_%d+\nTEST v%d+ 0\nJMP :goto_%d+  ; %+4 ↓\nGETTABUP v%d+ u0 "print"\nLOADK v%d+ "[^\n]-"\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+\n:goto_%d+\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+\n:goto_%d+\nLOADNIL v%d+%.%.v%d+\nLOADNIL v%d+%.%.v%d+\nMOVE v%d+ v%d+\nMOVE v%d+ v%d+\nMOVE v%d+ v%d+\nRETURN\n%.func F%d+ ; 4 upvalues, 0 locals, 17 constants, 0 funcs\n%.source ""\n%.linedefined 0\n%.lastlinedefined 0\n%.numparams 0\n%.is_vararg 0\n%.maxstacksize 5\n%.upval v%d+ nil ; u0\n%.upval u0 nil ; u1\n%.upval v%d+ nil ; u2\n%.upval v%d+ nil ; u3\n%.upval v%d+ nil ; u4\nGETTABUP v%d+ u1 "gg"\nGETTABLE v%d+ v%d+ "prompt"\nNEWTABLE v%d+ 1 0\nLOADK v%d+ "[^\n]-"\nSETLIST v%d+%.%.v%d+ 1\nLOADNIL v%d+%.%.v%d+\nNEWTABLE v%d+ 1 0\nLOADK v%d+ "text"\nSETLIST v%d+%.%.v%d+ 1\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSETUPVAL v%d+ u0\nGETUPVAL v%d+ u0\nTEST v%d+ 0\nJMP :goto_%d+  ; %+6 ↓\nGETTABUP v%d+ u1 "decode"\nGETTABUP v%d+ u0 1\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nGETUPVAL v%d+ u2\nEQ 1 v%d+ v%d+\nJMP :goto_%d+  ; %+6 ↓\n:goto_%d+\nGETTABUP v%d+ u1 "print"\nLOADK v%d+ "[^\n]-"\nCALL v%d+%.%.v%d+\nGETTABUP v%d+ u1 "os"\nGETTABLE v%d+ v%d+ "exit"\nCALL v%d+%.%.v%d+\n:goto_%d+\nGETTABUP v%d+ u1 "io"\nGETTABLE v%d+ v%d+ "open"\nGETUPVAL v%d+ u3\nLOADK v%d+ "w"\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSELF v%d+ v%d+ "write"\nLOADK v%d+ "[^\n]-"\nGETUPVAL v%d+ u2\nLOADK v%d+ "[^\n]-"\nCONCAT v%d+ v%d+%.%.v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSELF v%d+ v%d+ "close"\nCALL v%d+%.%.v%d+\n',''},
 
- -- No rename (kinda worked? if used, this will make script stuck...)
-		{'LOADK v%d+ "[^\n]-"\nGETTABUP v%d+ u0 "gg"\nGETTABLE v%d+ v%d+ "getFile"\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSELF v%d+ v%d+ "gsub"\nLOADK v%d+ "%^/%.%+/"\nLOADK v%d+ ""\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nEQ 1 v%d+ v%d+\nJMP :goto_%d+  ; %+10 ↓\nGETTABUP v%d+ u0 "print"\nLOADK v%d+ "[^\n]-"\nMOVE v%d+ v%d+\nLOADK v%d+ "[^\n]-"\nMOVE v%d+ v%d+\nCONCAT v%d+ v%d+%.%.v%d+\nCALL v%d+%.%.v%d+\nGETTABUP v%d+ u0 "os"\nGETTABLE v%d+ v%d+ "exit"\nCALL v%d+%.%.v%d+\n',''},
- -- Spam log (not work???)
-		{'GETTABUP v%d+ u0 "os"\nGETTABLE v%d+ v%d+ "time"\nGETTABUP v%d+ u0 "debug"\nGETTABLE v%d+ v%d+ "traceback"\nLOADK v%d+ "\x00\x04\b\xFF"\nSELF v%d+ v%d+ "rep"\nLOADK v%d+ 1000\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nMOVE v%d+ v%d+\nLOADK v%d+ 1\nLOADK v%d+ 2000\nLOADK v%d+ 1\n; %.local v%d+ "%(for index%)"\n; %.local v%d+ "%(for limit%)"\n; %.local v%d+ "%(for step%)"\n; %.local v%d+ "%(for iterator%)"\nFORPREP v%d+ :goto_%d+  ; %+5 ↓\n:goto_%d+\nMOVE v%d+ v%d+\nLOADK v%d+ 1\nLOADNIL v%d+%.%.v%d+\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+\n:goto_%d+\nFORLOOP v%d+ :goto_%d+  ; %-6 ↑\n; %.end local v%d+ "%(for index%)"\n; %.end local v%d+ "%(for limit%)"\n; %.end local v%d+ "%(for step%)"\n; %.end local v%d+ "%(for iterator%)"\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nMOVE v%d+ v%d+\nSUB v%d+ v%d+ v%d+\nLT 0 1 v%d+\nJMP :goto_%d+  ; %+6 ↓\nGETTABUP v%d+ u0 "print"\nLOADK v%d+ "[^\n]-"\nCALL v%d+%.%.v%d+\nGETTABUP v%d+ u0 "os"\nGETTABLE v%d+ v%d+ "exit"\nCALL v%d+%.%.v%d+\n:goto_%d+\nLOADNIL v%d+%.%.v%d+\nLOADNIL v%d+%.%.v%d+\nMOVE v%d+ v%d+\nMOVE v%d+ v%d+\nMOVE v%d+ v%d+\nMOVE v%d+ v%d+\n"',''},
- -- HackerBoyXVPN Obfuscation (works)
-		{'LOADBOOL v%d+ 0\nTEST v%d+ 0\nJMP :goto_%d+  ; %+86 ↓\nNEWTABLE v%d+ 8 0\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nMOD v%d+ v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nSETLIST v%d+%.%.v%d+ 1\nLEN v%d+ v%d+\nLT 1 v%d+ 0\nJMP :goto_%d+  ; %+66 ↓\nLEN v%d+ v%d+\nGETTABLE v%d+ v%d+ v%d+\nLT 1 v%d+ 0\nJMP :goto_%d+  ; %+62 ↓\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nGETTABLE v%d+ v%d+ v%d+\nLEN v%d+ v%d+\nEQ 1 v%d+ v%d+\nJMP :goto_%d+  ; %+6 ↓\nLEN v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nGETTABLE v%d+ v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSETTABLE v%d+ v%d+ v%d+\n:goto_%d+\nLEN v%d+ v%d+\nLT 0 v%d+ nil\nJMP :goto_%d+  ; %+11 ↓\nLEN v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nGETTABLE v%d+ v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSETTABLE v%d+ v%d+ v%d+\nJMP :goto_%d+  ; %+3 ↓\n:goto_%d+\nGETTABUP v%d+ u0 "obf_P3oU"\nCALL v%d+%.%.v%d+\n:goto_%d+\nCLOSURE v%d+ F%d+\nSETTABUP u0 "obf_P3oU" v%d+\nJMP :goto_%d+  ; %-5 ↑\n:goto_%d+\n',''},
-	},
-	RemoveGarbage = {
-	--All this was original by @ABJ4403
-		{'[^\n]*; garbage\n',''},
-	--{'[^\n]*; unused\n',''}, -- disabled cuz removing RETURN after TAILCALL, and this f'ed unluac
-	--{'\nRETURN (.-)\nRETURN  ; unused\n','\nRETURN %1\n'}, -- somehow removed RETURN ..\n:label\nRETURN, idk if this will f'ed unluac too or not
-	--{'\nTAILCALL (.-)\nRETURN .- ; unused\n','\nTAILCALL %1\n'}, -- disabled cuz removing RETURN after TAILCALL, and this f'ed unluac
-		{'[^\n]*; variable v%d- out of stack %(%.maxstacksize = %d- for this func%)\n',''},
-		{'\nJMP :goto_%d-  ; %-0 ↑\n','\n'},
-		{'\nJMP :goto_%d-  ; %+0 ↓\n','\n'},
-		{'\nOP%[%d%d%] 0x[0-9a-f]-\n','\n'},
-	--{'\n[^\n]* CONST%[.-%]',''}, -- untested
+		 -- No rename (kinda worked? if used, this will make script stuck...)
+				{'LOADK v%d+ "[^\n]-"\nGETTABUP v%d+ u0 "gg"\nGETTABLE v%d+ v%d+ "getFile"\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSELF v%d+ v%d+ "gsub"\nLOADK v%d+ "%^/%.%+/"\nLOADK v%d+ ""\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nEQ 1 v%d+ v%d+\nJMP :goto_%d+  ; %+10 ↓\nGETTABUP v%d+ u0 "print"\nLOADK v%d+ "[^\n]-"\nMOVE v%d+ v%d+\nLOADK v%d+ "[^\n]-"\nMOVE v%d+ v%d+\nCONCAT v%d+ v%d+%.%.v%d+\nCALL v%d+%.%.v%d+\nGETTABUP v%d+ u0 "os"\nGETTABLE v%d+ v%d+ "exit"\nCALL v%d+%.%.v%d+\n',''},
+		 -- Spam log (not work???)
+				{'GETTABUP v%d+ u0 "os"\nGETTABLE v%d+ v%d+ "time"\nGETTABUP v%d+ u0 "debug"\nGETTABLE v%d+ v%d+ "traceback"\nLOADK v%d+ "\x00\x04\b\xFF"\nSELF v%d+ v%d+ "rep"\nLOADK v%d+ 1000\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nMOVE v%d+ v%d+\nLOADK v%d+ 1\nLOADK v%d+ 2000\nLOADK v%d+ 1\n; %.local v%d+ "%(for index%)"\n; %.local v%d+ "%(for limit%)"\n; %.local v%d+ "%(for step%)"\n; %.local v%d+ "%(for iterator%)"\nFORPREP v%d+ :goto_%d+  ; %+5 ↓\n:goto_%d+\nMOVE v%d+ v%d+\nLOADK v%d+ 1\nLOADNIL v%d+%.%.v%d+\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+\n:goto_%d+\nFORLOOP v%d+ :goto_%d+  ; %-6 ↑\n; %.end local v%d+ "%(for index%)"\n; %.end local v%d+ "%(for limit%)"\n; %.end local v%d+ "%(for step%)"\n; %.end local v%d+ "%(for iterator%)"\nMOVE v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nMOVE v%d+ v%d+\nSUB v%d+ v%d+ v%d+\nLT 0 1 v%d+\nJMP :goto_%d+  ; %+6 ↓\nGETTABUP v%d+ u0 "print"\nLOADK v%d+ "[^\n]-"\nCALL v%d+%.%.v%d+\nGETTABUP v%d+ u0 "os"\nGETTABLE v%d+ v%d+ "exit"\nCALL v%d+%.%.v%d+\n:goto_%d+\nLOADNIL v%d+%.%.v%d+\nLOADNIL v%d+%.%.v%d+\nMOVE v%d+ v%d+\nMOVE v%d+ v%d+\nMOVE v%d+ v%d+\nMOVE v%d+ v%d+\n"',''},
+		 -- HackerBoyXVPN Obfuscation (works)
+				{'LOADBOOL v%d+ 0\nTEST v%d+ 0\nJMP :goto_%d+  ; %+86 ↓\nNEWTABLE v%d+ 8 0\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nMOD v%d+ v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nSETLIST v%d+%.%.v%d+ 1\nLEN v%d+ v%d+\nLT 1 v%d+ 0\nJMP :goto_%d+  ; %+66 ↓\nLEN v%d+ v%d+\nGETTABLE v%d+ v%d+ v%d+\nLT 1 v%d+ 0\nJMP :goto_%d+  ; %+62 ↓\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nGETTABLE v%d+ v%d+ v%d+\nLEN v%d+ v%d+\nEQ 1 v%d+ v%d+\nJMP :goto_%d+  ; %+6 ↓\nLEN v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nGETTABLE v%d+ v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSETTABLE v%d+ v%d+ v%d+\n:goto_%d+\nLEN v%d+ v%d+\nLT 0 v%d+ nil\nJMP :goto_%d+  ; %+11 ↓\nLEN v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nUNM v%d+ v%d+\nLOADNIL v%d+%.%.v%d+\nGETTABLE v%d+ v%d+ v%d+\nCALL v%d+%.%.v%d+ v%d+%.%.v%d+\nSETTABLE v%d+ v%d+ v%d+\nJMP :goto_%d+  ; %+3 ↓\n:goto_%d+\nGETTABUP v%d+ u0 "obf_P3oU"\nCALL v%d+%.%.v%d+\n:goto_%d+\nCLOSURE v%d+ F%d+\nSETTABUP u0 "obf_P3oU" v%d+\nJMP :goto_%d+  ; %-5 ↑\n:goto_%d+\n',''},
+			},
+			RemoveGarbage = {
+			--All this was original by @ABJ4403
+				{'[^\n]*; garbage\n',''},
+			--{'[^\n]*; unused\n',''}, -- disabled cuz removing RETURN after TAILCALL, and this f'ed unluac
+			--{'\nRETURN (.-)\nRETURN  ; unused\n','\nRETURN %1\n'}, -- somehow removed RETURN ..\n:label\nRETURN, idk if this will f'ed unluac too or not
+			--{'\nTAILCALL (.-)\nRETURN .- ; unused\n','\nTAILCALL %1\n'}, -- disabled cuz removing RETURN after TAILCALL, and this f'ed unluac
+				{'[^\n]*; variable v%d- out of stack %(%.maxstacksize = %d- for this func%)\n',''},
+				{'\nJMP :goto_%d-  ; %-0 ↑\n','\n'},
+				{'\nJMP :goto_%d-  ; %+0 ↓\n','\n'},
+				{'\nOP%[%d%d%] 0x[0-9a-f]-\n','\n'},
+			--{'\n[^\n]* CONST%[.-%]',''}, -- untested
 
-	--remove null loop
-		{'\n:goto_(%d-)\nJMP :goto_(%d-)\n',function(a,b)return (a == b) and''or'\n:goto_'..a..'\nJMP :goto_'..b..'\n'end}, -- while true do end/infinite loop
-		{'FORLOOP v%d- GOTO%[%-%d-%]  ; %-%d- ↑\n; %.end local v%d- "%(for index%)"\n; %.end local v%d- "%(for limit%)"\n; %.end local v%d- "%(for step%)"\n; %.end local v%d- "%(for iterator%)"',''},
-		{'FORLOOP v%d- GOTO%[%d-%]  ; %+%d- ↓\n; %.end local v%d- "%(for index%)"\n; %.end local v%d- "%(for limit%)"\n; %.end local v%d- "%(for step%)"\n; %.end local v%d- "%(for iterator%)"',''},
-		{'LOADK v%d- %d-\nLOADK v%d- %d-\nLOADK v%d- %d-\n; %.local v%d- "%(for index%)"\n; %.local v%d- "%(for limit%)"\n; %.local v%d- "%(for step%)"\n; %.local v%d- "%(for iterator%)"\nFORPREP v%d- :goto_%d-  ; %+0 ↓\n:goto_%d-\nFORLOOP v%d- :goto_%d-  ; %-1 ↑\n; %.end local v%d- "%(for index%)"\n; %.end local v%d- "%(for limit%)"\n; %.end local v%d- "%(for step%)"\n; %.end local v%d- "%(for iterator%)"',''},
+			--remove null loop
+				{'\n:goto_(%d-)\nJMP :goto_(%d-)\n',function(a,b)return (a == b) and''or'\n:goto_'..a..'\nJMP :goto_'..b..'\n'end}, -- while true do end/infinite loop
+				{'FORLOOP v%d- GOTO%[%-%d-%]  ; %-%d- ↑\n; %.end local v%d- "%(for index%)"\n; %.end local v%d- "%(for limit%)"\n; %.end local v%d- "%(for step%)"\n; %.end local v%d- "%(for iterator%)"',''},
+				{'FORLOOP v%d- GOTO%[%d-%]  ; %+%d- ↓\n; %.end local v%d- "%(for index%)"\n; %.end local v%d- "%(for limit%)"\n; %.end local v%d- "%(for step%)"\n; %.end local v%d- "%(for iterator%)"',''},
+				{'LOADK v%d- %d-\nLOADK v%d- %d-\nLOADK v%d- %d-\n; %.local v%d- "%(for index%)"\n; %.local v%d- "%(for limit%)"\n; %.local v%d- "%(for step%)"\n; %.local v%d- "%(for iterator%)"\nFORPREP v%d- :goto_%d-  ; %+0 ↓\n:goto_%d-\nFORLOOP v%d- :goto_%d-  ; %-1 ↑\n; %.end local v%d- "%(for index%)"\n; %.end local v%d- "%(for limit%)"\n; %.end local v%d- "%(for step%)"\n; %.end local v%d- "%(for iterator%)"',''},
 
-	--anti-unluac (BOR,BNOT,BAND,BXOR is OP41,OP42,OP43,OP44 if lua version is 5.2, which makes unluac confused)
-		{'\nBAND v%d- v%d- v%d-\n','\n'},
-	--{'\nBOR v(%d-) v(%d-) v(%d-)\n','\nADD v%1 v%2 v%3\n'}, -- in cases like gg.setRanges(gg.REGION_* | gg.REGION_*)
-		{'\nBNOT v%d- v%d-\n','\n'},
-	--{'\nBXOR v%d- v%d- v%d-\n','\n'},
+			--anti-unluac (BOR,BNOT,BAND,BXOR is OP41,OP42,OP43,OP44 if lua version is 5.2, which makes unluac confused)
+				{'\nBAND v%d- v%d- v%d-\n','\n'},
+			--{'\nBOR v(%d-) v(%d-) v(%d-)\n','\nADD v%1 v%2 v%3\n'}, -- in cases like gg.setRanges(gg.REGION_* | gg.REGION_*)
+				{'\nBNOT v%d- v%d-\n','\n'},
+			--{'\nBXOR v%d- v%d- v%d-\n','\n'},
 
-	--anti-unluac but also corrupted math that is when executed, crashed the script
-		{'\nBAND v(%d-) (.-) (.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nBAND v'..a..' '..b..' '..c..'\n'end}, -- a & b
-		{'\nBXOR v(%d-) (.-) (.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nBXOR v'..a..' '..b..' '..c..'\n'end}, -- a ~ b
-		{'\nBOR v(%d-) (.-) (.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nBOR v'..a..' '..b..' '..c..'\n'end}, -- a | b
-		{'\nADD v(%d-) (.-) (.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nADD v'..a..' '..b..' '..c..'\n'end}, -- a + b
-		{'\nSUB v(%d-) (.-) (.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nSUB v'..a..' '..b..' '..c..'\n'end}, -- a - b
-		{'\nMUL v(%d-) (.-) (.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nMUL v'..a..' '..b..' '..c..'\n'end}, -- a * b
-		{'\nDIV v(%d-) (.-) (.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nDIV v'..a..' '..b..' '..c..'\n'end}, -- a / b
-		{'\nIDIV v(%d-) (.-) (.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nIDIV v'..a..' '..b..' '..c..'\n'end}, -- a // b
-		{'\nMOD v(%d-) (.-) (.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nMOD v'..a..' '..b..' '..c..'\n'end}, -- a % b
-		{'\nPOW v(%d-) (.-) (.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nPOW v'..a..' '..b..' '..c..'\n'end}, -- a ^ b
-		{'\nSHR v(%d-) (.-) (.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nSHR v'..a..' '..b..' '..c..'\n'end}, -- a >> b
-		{'\nSHL v(%d-) (.-) (.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nSHL v'..a..' '..b..' '..c..'\n'end}, -- a << b
-		{'\nCONCAT v(%d-) (.-)%.%.(.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nCONCAT v'..a..' '..b..'..'..c..'\n'end}, -- a .. b
-		{'\nUNM v(%d-) (.-)\n',function(a,b)return (b=='nil'or b=='true'or b=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nUNM v'..a..' '..b..'\n'end}, -- -a
-		{'\nLEN v(%d-) (.-)\n',function(a,b)return (b=='nil'or b=='true'or b=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nLEN v'..a..' '..b..'\n'end}, -- #a
-		{'\nBNOT v(%d-) (.-)\n',function(a,b)return (b=='nil'or b=='true'or b=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nBNOT v'..a..' '..b..'\n'end}, -- ~a
+			--anti-unluac but also corrupted math that is when executed, crashed the script
+				{'\nBAND v(%d-) (.-) (.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nBAND v'..a..' '..b..' '..c..'\n'end}, -- a & b
+				{'\nBXOR v(%d-) (.-) (.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nBXOR v'..a..' '..b..' '..c..'\n'end}, -- a ~ b
+				{'\nBOR v(%d-) (.-) (.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nBOR v'..a..' '..b..' '..c..'\n'end}, -- a | b
+				{'\nADD v(%d-) (.-) (.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nADD v'..a..' '..b..' '..c..'\n'end}, -- a + b
+				{'\nSUB v(%d-) (.-) (.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nSUB v'..a..' '..b..' '..c..'\n'end}, -- a - b
+				{'\nMUL v(%d-) (.-) (.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nMUL v'..a..' '..b..' '..c..'\n'end}, -- a * b
+				{'\nDIV v(%d-) (.-) (.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nDIV v'..a..' '..b..' '..c..'\n'end}, -- a / b
+				{'\nIDIV v(%d-) (.-) (.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nIDIV v'..a..' '..b..' '..c..'\n'end}, -- a // b
+				{'\nMOD v(%d-) (.-) (.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nMOD v'..a..' '..b..' '..c..'\n'end}, -- a % b
+				{'\nPOW v(%d-) (.-) (.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nPOW v'..a..' '..b..' '..c..'\n'end}, -- a ^ b
+				{'\nSHR v(%d-) (.-) (.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nSHR v'..a..' '..b..' '..c..'\n'end}, -- a >> b
+				{'\nSHL v(%d-) (.-) (.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nSHL v'..a..' '..b..' '..c..'\n'end}, -- a << b
+				{'\nCONCAT v(%d-) (.-)%.%.(.-)\n',function(a,b,c)return (b=='nil'or b=='true'or b=='false'or c=='nil'or c=='true'or c=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nCONCAT v'..a..' '..b..'..'..c..'\n'end}, -- a .. b
+				{'\nUNM v(%d-) (.-)\n',function(a,b)return (b=='nil'or b=='true'or b=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nUNM v'..a..' '..b..'\n'end}, -- -a
+				{'\nLEN v(%d-) (.-)\n',function(a,b)return (b=='nil'or b=='true'or b=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nLEN v'..a..' '..b..'\n'end}, -- #a
+				{'\nBNOT v(%d-) (.-)\n',function(a,b)return (b=='nil'or b=='true'or b=='false') and'\nLOADNIL v'..a..'..v'..a..'\n'or'\nBNOT v'..a..' '..b..'\n'end}, -- ~a
 
-	--Unnecessary calls
-	--convert checks against same variable to `nil == nil`/`nil ~= nil`
-		{'\nLT 1 (.-) (.-)\n',function(b,c)return (b == c) and'\nEQ 0 nil nil\n'or'\nLT 1 '..b..' '..c..'\n'end},
-		{'\nLE 1 (.-) (.-)\n',function(b,c)return (b == c) and'\nEQ 1 nil nil\n'or'\nLE 1 '..b..' '..c..'\n'end},
-	--literally moves nothing
-		{'\nMOVE v(%d-) v(%d-)\n',function(b,c)return (b == c) and'\n'or'\nMOVE v'..b..' v'..c..'\n'end},
-	--{'\nEQ (.-) (.-) (.-)\n',function(a,b,c)if b == c then b,c='nil','nil'end return'\nEQ '..a..' '..b..' '..c..'\n'end},
+			--Unnecessary calls
+			--convert checks against same variable to `nil == nil`/`nil ~= nil`
+				{'\nLT 1 (.-) (.-)\n',function(b,c)return (b == c) and'\nEQ 0 nil nil\n'or'\nLT 1 '..b..' '..c..'\n'end},
+				{'\nLE 1 (.-) (.-)\n',function(b,c)return (b == c) and'\nEQ 1 nil nil\n'or'\nLE 1 '..b..' '..c..'\n'end},
+			--literally moves nothing
+				{'\nMOVE v(%d-) v(%d-)\n',function(b,c)return (b == c) and'\n'or'\nMOVE v'..b..' v'..c..'\n'end},
+			--{'\nEQ (.-) (.-) (.-)\n',function(a,b,c)if b == c then b,c='nil','nil'end return'\nEQ '..a..' '..b..' '..c..'\n'end},
 
-	--another possible anti-unluac
-	--{'\n%.upval v%d- [^\n]* ; u%d-\n','\n'},
+			--another possible anti-unluac
+			--{'\n%.upval v%d- [^\n]* ; u%d-\n','\n'},
 
- -- TODO: these adds extra .upval/RETURN values
- -- function with no upval (crashes assembler)
-		{'\n%.source (.-\n%.maxstacksize %d-)\n','\n.source %1\n.upval u0 nil\n'},
- -- function with no RETURN (crashes assembler and causes vm error)
-		{'\n%.source (.-\n)%.end',function(srcinst)return'\n.source '..srcinst:gsub('\nRETURN[^\n]*','')..'RETURN\n.end'end},
+		 -- TODO: these adds extra .upval/RETURN values
+		 -- function with no upval (crashes assembler)
+				{'\n%.source (.-\n%.maxstacksize %d-)\n','\n.source %1\n.upval u0 nil\n'},
+		 -- function with no RETURN (crashes assembler and causes vm error)
+				{'\n%.source (.-\n)%.end',function(srcinst)return'\n.source '..srcinst:gsub('\nRETURN[^\n]*','')..'RETURN\n.end'end},
 
 
-	--[[
-TODO: make sure no garbage bytecode passes on
-		{'\nLOADK v%d+ CONST[%d+]\n','\n'},
-also
-.func wuteverrr
-.source ..
-.linedefined ..
-.lastlinedefined ..
-.numparams ..
-.is_vararg ..
-.maxstacksize ..
- ; make sure either one of these exist in a func
-.upval u0 nil
-.upval v0 "_ENV"
+			--[[
+		TODO: make sure no garbage bytecode passes on
+				{'\nLOADK v%d+ CONST[%d+]\n','\n'},
+		also
+		.func wuteverrr
+		.source ..
+		.linedefined ..
+		.lastlinedefined ..
+		.numparams ..
+		.is_vararg ..
+		.maxstacksize ..
+		 ; make sure either one of these exist in a func
+		.upval u0 nil
+		.upval v0 "_ENV"
 
-and oddly gg asm leaves one whitespace before newline on some codes
-add the trimming on EssentialMinify ? (do we already done that?)
+		and oddly gg asm leaves one whitespace before newline on some codes
+		add the trimming on EssentialMinify ? (do we already done that?)
 
-	]]
-	},
-	RemoveLasmBlock = {
- -- Lasm block, known as Anti reassemble
- -- Original by SwinX Tools. some numbers were modified to work...
-		{
-			'[^\n]*%.source ".-"\n%.linedefined %d-\n%.lastlinedefined %d-\n%.numparams (%d-)\n%.is_vararg (%d-)\n%.maxstacksize (%d-)\n',
-			function(a,b,c)return'.source ""\n.linedefined 0\n.lastlinedefined 0\n.numparams '..math.min(21,tonumber(a))..'\n.is_vararg '..b..'\n.maxstacksize '..math.min(21,tonumber(c))..'\n'end
+			]]
+			},
+			RemoveLasmBlock = {
+		 -- Lasm block, known as Anti reassemble
+		 -- Original by SwinX Tools. some numbers were modified to work...
+				{
+					'[^\n]*%.source ".-"\n%.linedefined %d-\n%.lastlinedefined %d-\n%.numparams (%d-)\n%.is_vararg (%d-)\n%.maxstacksize (%d-)\n',
+					function(a,b,c)return'.source ""\n.linedefined 0\n.lastlinedefined 0\n.numparams '..math.min(21,tonumber(a))..'\n.is_vararg '..b..'\n.maxstacksize '..math.min(21,tonumber(c))..'\n'end
+				},
+			},
+			RemoveCodeHider = {
+				{' SET_TOP\n','\n'}, -- CALL v?..v? SET_TOP. some code fails, `print((function()return 1 end)()` returns nil instead of 1)
+				{'\nSETTABLE v%d- "[^\n]*" v%d-\n','\n'}, -- looks like this removes important code dont use this (a.b = nil)
+			--{'\nSETTABLE v%d- "[^\n]*" nil\n','\n'},
+			--{'\nSETTABLE v%d- v%d- nil\n','\n'},
+			},
+			RemoveBlocker1 = {
+		 -- Kudos to Daddyaaaaaaa for this
+				{'\nCALL v%d-..v%d-\n','\n'}, -- os.clock()
+				{'\nCALL v%d-..v%d- v%d-..v%d-\n','\n'}, -- os.clock(123) -- (Unverified)
+				{'\nEQ 1 v%d- v%d-\n','\n'}, -- v1 == v2
+				{'\nEQ 1 v%d- nil\n','\n'}, -- EQ0 = `v1 ~= nil`,EQ1 = `v1 == nil`,
+				{'\nGETTABLE v%d- v%d- nil\n','\n'}, -- table[nil]
+				{'\nGETTABLE v%d- v%d- "d"\n','\n'}, -- table.d
+				{'\nGETTABLE v%d- v%d- "clearResults"\n','\n'}, -- gg.clearResults() ???
+				{'\nGETTABUP v%d- u%d- "ipairs"\n','\n'}, -- _G.ipairs() ?
+				{'\nGETTABUP v%d- u%d- "i"\n','\n'}, -- _G.i
+			--{'\nLOADBOOL v%d- 0\n','\n'}, -- bruh = 1:true/0:false
+				{'\nLOADNIL v%d-..v%d-\n','\n'}, -- a,b=nil,nil
+				{'\nNEWTABLE v%d- 0 0\n','\n'}, -- new table with no items
+				{'\nSELF v%d- v%d- "Z"\n','\n'}, -- ?:Z()
+				{'\nSELF v%d- v%d- "_"\n','\n'}, -- ?:_()
+				{'\nSETTABUP u%d- ".-" ".-"\n','\n'}, -- _ENV.obf_bla = ...
+				{'\nSETTABUP u%d- v%d- v%d-\n','\n'}, -- _ENV.obf_bla = ...
+				{'\nSETTABUP u%d- v%d- ".-"\n','\n'}, -- _ENV.obf_bla = ...
+				{'\nSETTABUP u%d- ".-" v%d-\n','\n'}, -- _ENV.obf_bla = ...
+				{'\nTEST v%d- [01]\n','\n'}, -- a and/or b
+				{'\nUNM v%d- v%d-\n','\n'},
+				{'\nCLOSURE v%d- F%d-\nSETTABUP u%d- "fxs" v%d-\n','\n'}, -- function fxs()...end
+				{'\nCLOSURE v%d- F%d-\nSETTABUP u%d- "SearchWrite" v%d-\n','\n'}, -- function SearchWrite()...end
+				{'\nCLOSURE v%d- F%d-\nSETTABUP u%d- "setvalue" v%d-\n','\n'}, -- function setvalue()...end
+				{'\nGETTABUP v%d- u%d- "tonumber"\nLOADK v%d-.-%d$\nCALL v%d-..v%d- v%d-..v%d-\nGETTABUP v%d- u%d- "tonumber"\nLOADK v%d-.-%d$\nCALL v%d-..v%d- v%d-..v%d-\nLT 0 v%d- v%d-\nJMP :goto_%d-  ; %+0 ↓\n','\n'},
+				{'\nGETTABUP v%d- u0 "_____"\nLOADK v%d- 37\n','\n'},
+				{'\nGETTABUP v%d- u0 "_____"\nGETTABLE v%d- v%d- 37\n','\n'},
+				{'\nLOADK v%d- "fxs"\nCLOSURE v%d- F%d-\nSETTABUP u%d- v%d- v%d-\n','\n'},
+				{'\nLOADK v%d- "SearchWrite"\nCLOSURE v%d- F%d-\nSETTABUP u%d- v%d- v%d-\n','\n'},
+				{'\nLOADK v%d- "setvalue"\nCLOSURE v%d- F%d-\nSETTABUP u%d- v%d- v%d-\n','\n'},
+				{'\nLOADK v%d- 1\nLOADK v%d- 0\nLOADK v%d- 1\n; %.local v%d- "%(for index%)"\n; %.local v%d- "%(for limit%)"\n; %.local v%d- "%(for step%)"\n; %.local v%d- "%(for iterator%)"\nFORPREP v%d- :goto_%d-  ; %+%d- ↓\n','\n'},
+				{'\nNEWTABLE v%d- %d 0\n','\nGETTABUP v0 u0 "GARBAGE"\n'}, -- A = {..} > A = _ENV.GARBAGE
+				{'\nTFORCALL v%d-..v%d-\n','\n'},
+				{'\nTFORLOOP v%d- :goto_%d-* ; %-%d- ↑\n','\n'},
+			-- by thanh dieu
+				{"\nTEST [^\n]* v%d- v%d-\n","\n"},
+				{"\nTEST [^\n]* v%d- [^\n]*\n","\n"},
+				{"\nTEST [^\n]* [^\n]* v%d-\n","\n"},
+				{"\nTEST v%d- [^\n]* v%d-\n","\n"},
+				{"\nTEST v%d- [^\n]* [^\n]*\n","\n"},
+				{"\nTEST v%d- v%d- v%d-\n","\n"},
+				{"\nTEST v%d- v%d- [^\n]*\n","\n"},
+				{"\nSETLIST v%d-..v%d- [^\n]*\n","\n"},
+				{"\nCALL v%d- SET_TOP[^\n]*\n","\n"},
+				{"\nCALL v%d-..v%d- SET_TOP[^\n]*\n","\n"},
+				{"\nEQ [^\n]* v%d- v%d-\n","\n"},
+				{"\nEQ [^\n]* [^\n]* [^\n]*\n","\n"},
+				{"\nEQ [^\n]* v%d- [^\n]*\n","\n"},
+				{"\nEQ [^\n]* [^\n]* v%d-\n","\n"},
+				{"\nEQ v%d- [^\n]* v%d-\n","\n"},
+				{"\nEQ v%d- [^\n]* [^\n]*\n","\n"},
+				{"\nEQ v%d- v%d- v%d-\n","\n"},
+				{"\nEQ v%d- v%d- [^\n]*\n","\n"},
+				{"\nLOADBOOL [^\n]* v%d- v%d-\n","\n"},
+				{"\nLOADBOOL [^\n]* v%d- [^\n]*\n","\n"},
+				{"\nLOADBOOL [^\n]* [^\n]* v%d-\n","\n"},
+				{"\nLOADBOOL v%d- [^\n]* v%d-\n","\n"},
+				{"\nLOADBOOL v%d- [^\n]* [^\n]*\n","\n"},
+				{"\nLOADBOOL v%d- v%d- v%d-\n","\n"},
+				{"\nLOADBOOL v%d- v%d- [^\n]*\n","\n"},
+				{"\nLT [^\n]* v%d- v%d-\n","\n"},
+				{"\nLT [^\n]* [^\n]* [^\n]*\n","\n"},
+				{"\nLT [^\n]* v%d- [^\n]*\n","\n"},
+				{"\nLT [^\n]* [^\n]* v%d-\n","\n"},
+				{"\nLT v%d- [^\n]* v%d-\n","\n"},
+				{"\nLT v%d- [^\n]* [^\n]*\n","\n"},
+				{"\nLT v%d- v%d- v%d-\n","\n"},
+				{"\nLT v%d- v%d- [^\n]*\n","\n"},
+				{"\nLEN [^\n]* v%d- v%d-\n","\n"},
+				{"\nLEN [^\n]* v%d- [^\n]*\n","\n"},
+				{"\nLEN [^\n]* [^\n]* v%d-\n","\n"},
+				{"\nLEN v%d- [^\n]* v%d-\n","\n"},
+				{"\nLEN v%d- [^\n]* [^\n]*\n","\n"},
+				{"\nLEN v%d- v%d- v%d-\n","\n"},
+				{"\nLEN v%d- v%d- [^\n]*\n","\n"},
+				{"\nLE [^\n]* v%d- v%d-\n","\n"},
+				{"\nLE [^\n]* v%d- [^\n]*\n","\n"},
+				{"\nLE [^\n]* [^\n]* v%d-\n","\n"},
+				{"\nLE v%d- [^\n]* v%d-\n","\n"},
+				{"\nLE v%d- [^\n]* [^\n]*\n","\n"},
+				{"\nLE v%d- v%d- v%d-\n","\n"},
+				{"\nLE v%d- v%d- [^\n]*\n","\n"},
+				{"\nMOD [^\n]* v%d- v%d-\n","\n"},
+				{"\nMOD [^\n]* v%d- [^\n]*\n","\n"},
+				{"\nMOD [^\n]* [^\n]* v%d-\n","\n"},
+				{"\nMOD v%d- [^\n]* v%d-\n","\n"},
+				{"\nMOD v%d- [^\n]* [^\n]*\n","\n"},
+				{"\nMOD v%d- v%d- v%d-\n","\n"},
+				{"\nMOD v%d- v%d- [^\n]*\n","\n"},
+				{"\nMUL [^\n]* v%d- v%d-\n","\n"},
+				{"\nMUL [^\n]* v%d- [^\n]*\n","\n"},
+				{"\nMUL [^\n]* [^\n]* v%d-\n","\n"},
+				{"\nMUL v%d- [^\n]* v%d-\n","\n"},
+				{"\nMUL v%d- [^\n]* [^\n]*\n","\n"},
+				{"\nMUL v%d- v%d- v%d-\n","\n"},
+				{"\nMUL v%d- v%d- [^\n]*\n","\n"},
+				{"\nCONCAT [^\n]* v%d- v%d-\n","\n"},
+				{"\nCONCAT [^\n]* v%d- [^\n]*\n","\n"},
+				{"\nCONCAT [^\n]* [^\n]* v%d-\n","\n"},
+				{"\nCONCAT v%d- [^\n]* v%d-\n","\n"},
+				{"\nCONCAT v%d- [^\n]* [^\n]*\n","\n"},
+				{"\nCONCAT v%d- v%d- v%d-\n","\n"},
+				{"\nCONCAT v%d- v%d- [^\n]*\n","\n"},
+				{"\nLOADBOOL v%d- [^\n]*\n","\n"},
+				{"\nEQ [^\n]* v%d- v%d-\n","\n"},
+				{"\nTEST v%d- [^\n]*\n","\n"},
+				{"\nVARARG [^\n]* v%d- v%d-\n","\n"},
+				{"\nVARARG [^\n]* v%d- [^\n]*\n","\n"},
+				{"\nVARARG [^\n]* [^\n]* v%d-\n","\n"},
+				{"\nVARARG v%d- [^\n]* v%d-\n","\n"},
+				{"\nVARARG v%d- [^\n]* [^\n]*\n","\n"},
+				{"\nVARARG v%d- v%d- v%d-\n","\n"},
+				{"\nVARARG v%d- v%d- [^\n]*\n","\n"},
+				{"\nLOADK v%d- -[^\n]*\n","\n"},
+				{"\nBOR [^\n]* v%d- v%d-\n","\n"},
+				{"\nBOR [^\n]* v%d- [^\n]*\n","\n"},
+				{"\nBOR [^\n]* [^\n]* v%d-\n","\n"},
+				{"\nBOR v%d- [^\n]* v%d-\n","\n"},
+				{"\nBOR v%d- [^\n]* [^\n]*\n","\n"},
+				{"\nBOR v%d- v%d- v%d-\n","\n"},
+				{"\nBOR v%d- v%d- [^\n]*\n","\n"}
+			},
+			EssentialMinify = {
+		 -- Some regex fails, this can help by trimming spaces/tabs, and blank lines...
+				{'\n%s*(.-)%s*\n','\n%1\n'}, -- trim tabs
+				{'%s*\n%s*','\n'}, -- trim tabs
+				{'\n\n','\n'}, --remove blank line (doesnt do anything?)
+		-- useless gg assembly annotation (untested)
+			--{'\n; %.end local v%d- "%(for generator%)"\n','\n'},
+			--{'\n; %.end local v%d- "%(for state%)"\n','\n'},
+			--{'\n; %.end local v%d- "%(for control%)"\n','\n'},
+			--{'\n; %.end local v%d- "%(for key%)"\n','\n'},
+			},
+			JmpObf = {
+			--tries to remove some JMP obfuscations (this wont work on JMP obfuscated instruction though)
+			--{'\nJMP :goto_(%d-)  ; (%-%d-) ↑\n',function(l,o)l,o=tonumber(l),tonumber(o) return l > 0 or l < -999 and""or"JMP :goto_"..l.."  ; "..o.." ↑\n"end},
+			--{'\nJMP :goto_(%d-)  ; (%d-) ↓\n'  ,function(l,o)l,o=tonumber(l),tonumber(o) return l < 0 or l >  999 and""or"JMP :goto_"..l.."  ; "..o.." ↓\n"end},
+				{'\nJMP :goto_(%d-)  ; 0 ↓\n:goto_(%d-)',function(l,o)return a==b and''or'\nJMP :goto_'..a..'  ; 0 ↓\n:goto_'..b end},
+			--{'\nJMP :goto_(%d-)  ; 0 ↓\n:goto_(%d-)',function(l,o)return a==b and'\n:goto_'..b or'\nJMP :goto_'..a..'  ; 0 ↓\n:goto_'..b end},
+			},
 		},
 	},
-	RemoveCodeHider = {
-		{' SET_TOP\n','\n'}, -- CALL v?..v? SET_TOP. some code fails, `print((function()return 1 end)()` returns nil instead of 1)
-		{'\nSETTABLE v%d- "[^\n]*" v%d-\n','\n'}, -- looks like this removes important code dont use this (a.b = nil)
-	--{'\nSETTABLE v%d- "[^\n]*" nil\n','\n'},
-	--{'\nSETTABLE v%d- v%d- nil\n','\n'},
-	},
-	RemoveBlocker1 = {
- -- Kudos to Daddyaaaaaaa for this
-		{'\nCALL v%d-..v%d-\n','\n'}, -- os.clock()
-		{'\nCALL v%d-..v%d- v%d-..v%d-\n','\n'}, -- os.clock(123) -- (Unverified)
-		{'\nEQ 1 v%d- v%d-\n','\n'}, -- v1 == v2
-		{'\nEQ 1 v%d- nil\n','\n'}, -- EQ0 = `v1 ~= nil`,EQ1 = `v1 == nil`,
-		{'\nGETTABLE v%d- v%d- nil\n','\n'}, -- table[nil]
-		{'\nGETTABLE v%d- v%d- "d"\n','\n'}, -- table.d
-		{'\nGETTABLE v%d- v%d- "clearResults"\n','\n'}, -- gg.clearResults() ???
-		{'\nGETTABUP v%d- u%d- "ipairs"\n','\n'}, -- _G.ipairs() ?
-		{'\nGETTABUP v%d- u%d- "i"\n','\n'}, -- _G.i
-	--{'\nLOADBOOL v%d- 0\n','\n'}, -- bruh = 1:true/0:false
-		{'\nLOADNIL v%d-..v%d-\n','\n'}, -- a,b=nil,nil
-		{'\nNEWTABLE v%d- 0 0\n','\n'}, -- new table with no items
-		{'\nSELF v%d- v%d- "Z"\n','\n'}, -- ?:Z()
-		{'\nSELF v%d- v%d- "_"\n','\n'}, -- ?:_()
-		{'\nSETTABUP u%d- ".-" ".-"\n','\n'}, -- _ENV.obf_bla = ...
-		{'\nSETTABUP u%d- v%d- v%d-\n','\n'}, -- _ENV.obf_bla = ...
-		{'\nSETTABUP u%d- v%d- ".-"\n','\n'}, -- _ENV.obf_bla = ...
-		{'\nSETTABUP u%d- ".-" v%d-\n','\n'}, -- _ENV.obf_bla = ...
-		{'\nTEST v%d- [01]\n','\n'}, -- a and/or b
-		{'\nUNM v%d- v%d-\n','\n'},
-		{'\nCLOSURE v%d- F%d-\nSETTABUP u%d- "fxs" v%d-\n','\n'}, -- function fxs()...end
-		{'\nCLOSURE v%d- F%d-\nSETTABUP u%d- "SearchWrite" v%d-\n','\n'}, -- function SearchWrite()...end
-		{'\nCLOSURE v%d- F%d-\nSETTABUP u%d- "setvalue" v%d-\n','\n'}, -- function setvalue()...end
-		{'\nGETTABUP v%d- u%d- "tonumber"\nLOADK v%d-.-%d$\nCALL v%d-..v%d- v%d-..v%d-\nGETTABUP v%d- u%d- "tonumber"\nLOADK v%d-.-%d$\nCALL v%d-..v%d- v%d-..v%d-\nLT 0 v%d- v%d-\nJMP :goto_%d-  ; %+0 ↓\n','\n'},
-		{'\nGETTABUP v%d- u0 "_____"\nLOADK v%d- 37\n','\n'},
-		{'\nGETTABUP v%d- u0 "_____"\nGETTABLE v%d- v%d- 37\n','\n'},
-		{'\nLOADK v%d- "fxs"\nCLOSURE v%d- F%d-\nSETTABUP u%d- v%d- v%d-\n','\n'},
-		{'\nLOADK v%d- "SearchWrite"\nCLOSURE v%d- F%d-\nSETTABUP u%d- v%d- v%d-\n','\n'},
-		{'\nLOADK v%d- "setvalue"\nCLOSURE v%d- F%d-\nSETTABUP u%d- v%d- v%d-\n','\n'},
-		{'\nLOADK v%d- 1\nLOADK v%d- 0\nLOADK v%d- 1\n; %.local v%d- "%(for index%)"\n; %.local v%d- "%(for limit%)"\n; %.local v%d- "%(for step%)"\n; %.local v%d- "%(for iterator%)"\nFORPREP v%d- :goto_%d-  ; %+%d- ↓\n','\n'},
-		{'\nNEWTABLE v%d- %d 0\n','\nGETTABUP v0 u0 "GARBAGE"\n'}, -- A = {..} > A = _ENV.GARBAGE
-		{'\nTFORCALL v%d-..v%d-\n','\n'},
-		{'\nTFORLOOP v%d- :goto_%d-* ; %-%d- ↑\n','\n'},
-	-- by thanh dieu
-		{"\nTEST [^\n]* v%d- v%d-\n","\n"},
-		{"\nTEST [^\n]* v%d- [^\n]*\n","\n"},
-		{"\nTEST [^\n]* [^\n]* v%d-\n","\n"},
-		{"\nTEST v%d- [^\n]* v%d-\n","\n"},
-		{"\nTEST v%d- [^\n]* [^\n]*\n","\n"},
-		{"\nTEST v%d- v%d- v%d-\n","\n"},
-		{"\nTEST v%d- v%d- [^\n]*\n","\n"},
-		{"\nSETLIST v%d-..v%d- [^\n]*\n","\n"},
-		{"\nCALL v%d- SET_TOP[^\n]*\n","\n"},
-		{"\nCALL v%d-..v%d- SET_TOP[^\n]*\n","\n"},
-		{"\nEQ [^\n]* v%d- v%d-\n","\n"},
-		{"\nEQ [^\n]* [^\n]* [^\n]*\n","\n"},
-		{"\nEQ [^\n]* v%d- [^\n]*\n","\n"},
-		{"\nEQ [^\n]* [^\n]* v%d-\n","\n"},
-		{"\nEQ v%d- [^\n]* v%d-\n","\n"},
-		{"\nEQ v%d- [^\n]* [^\n]*\n","\n"},
-		{"\nEQ v%d- v%d- v%d-\n","\n"},
-		{"\nEQ v%d- v%d- [^\n]*\n","\n"},
-		{"\nLOADBOOL [^\n]* v%d- v%d-\n","\n"},
-		{"\nLOADBOOL [^\n]* v%d- [^\n]*\n","\n"},
-		{"\nLOADBOOL [^\n]* [^\n]* v%d-\n","\n"},
-		{"\nLOADBOOL v%d- [^\n]* v%d-\n","\n"},
-		{"\nLOADBOOL v%d- [^\n]* [^\n]*\n","\n"},
-		{"\nLOADBOOL v%d- v%d- v%d-\n","\n"},
-		{"\nLOADBOOL v%d- v%d- [^\n]*\n","\n"},
-		{"\nLT [^\n]* v%d- v%d-\n","\n"},
-		{"\nLT [^\n]* [^\n]* [^\n]*\n","\n"},
-		{"\nLT [^\n]* v%d- [^\n]*\n","\n"},
-		{"\nLT [^\n]* [^\n]* v%d-\n","\n"},
-		{"\nLT v%d- [^\n]* v%d-\n","\n"},
-		{"\nLT v%d- [^\n]* [^\n]*\n","\n"},
-		{"\nLT v%d- v%d- v%d-\n","\n"},
-		{"\nLT v%d- v%d- [^\n]*\n","\n"},
-		{"\nLEN [^\n]* v%d- v%d-\n","\n"},
-		{"\nLEN [^\n]* v%d- [^\n]*\n","\n"},
-		{"\nLEN [^\n]* [^\n]* v%d-\n","\n"},
-		{"\nLEN v%d- [^\n]* v%d-\n","\n"},
-		{"\nLEN v%d- [^\n]* [^\n]*\n","\n"},
-		{"\nLEN v%d- v%d- v%d-\n","\n"},
-		{"\nLEN v%d- v%d- [^\n]*\n","\n"},
-		{"\nLE [^\n]* v%d- v%d-\n","\n"},
-		{"\nLE [^\n]* v%d- [^\n]*\n","\n"},
-		{"\nLE [^\n]* [^\n]* v%d-\n","\n"},
-		{"\nLE v%d- [^\n]* v%d-\n","\n"},
-		{"\nLE v%d- [^\n]* [^\n]*\n","\n"},
-		{"\nLE v%d- v%d- v%d-\n","\n"},
-		{"\nLE v%d- v%d- [^\n]*\n","\n"},
-		{"\nMOD [^\n]* v%d- v%d-\n","\n"},
-		{"\nMOD [^\n]* v%d- [^\n]*\n","\n"},
-		{"\nMOD [^\n]* [^\n]* v%d-\n","\n"},
-		{"\nMOD v%d- [^\n]* v%d-\n","\n"},
-		{"\nMOD v%d- [^\n]* [^\n]*\n","\n"},
-		{"\nMOD v%d- v%d- v%d-\n","\n"},
-		{"\nMOD v%d- v%d- [^\n]*\n","\n"},
-		{"\nMUL [^\n]* v%d- v%d-\n","\n"},
-		{"\nMUL [^\n]* v%d- [^\n]*\n","\n"},
-		{"\nMUL [^\n]* [^\n]* v%d-\n","\n"},
-		{"\nMUL v%d- [^\n]* v%d-\n","\n"},
-		{"\nMUL v%d- [^\n]* [^\n]*\n","\n"},
-		{"\nMUL v%d- v%d- v%d-\n","\n"},
-		{"\nMUL v%d- v%d- [^\n]*\n","\n"},
-		{"\nCONCAT [^\n]* v%d- v%d-\n","\n"},
-		{"\nCONCAT [^\n]* v%d- [^\n]*\n","\n"},
-		{"\nCONCAT [^\n]* [^\n]* v%d-\n","\n"},
-		{"\nCONCAT v%d- [^\n]* v%d-\n","\n"},
-		{"\nCONCAT v%d- [^\n]* [^\n]*\n","\n"},
-		{"\nCONCAT v%d- v%d- v%d-\n","\n"},
-		{"\nCONCAT v%d- v%d- [^\n]*\n","\n"},
-		{"\nLOADBOOL v%d- [^\n]*\n","\n"},
-		{"\nEQ [^\n]* v%d- v%d-\n","\n"},
-		{"\nTEST v%d- [^\n]*\n","\n"},
-		{"\nVARARG [^\n]* v%d- v%d-\n","\n"},
-		{"\nVARARG [^\n]* v%d- [^\n]*\n","\n"},
-		{"\nVARARG [^\n]* [^\n]* v%d-\n","\n"},
-		{"\nVARARG v%d- [^\n]* v%d-\n","\n"},
-		{"\nVARARG v%d- [^\n]* [^\n]*\n","\n"},
-		{"\nVARARG v%d- v%d- v%d-\n","\n"},
-		{"\nVARARG v%d- v%d- [^\n]*\n","\n"},
-		{"\nLOADK v%d- -[^\n]*\n","\n"},
-		{"\nBOR [^\n]* v%d- v%d-\n","\n"},
-		{"\nBOR [^\n]* v%d- [^\n]*\n","\n"},
-		{"\nBOR [^\n]* [^\n]* v%d-\n","\n"},
-		{"\nBOR v%d- [^\n]* v%d-\n","\n"},
-		{"\nBOR v%d- [^\n]* [^\n]*\n","\n"},
-		{"\nBOR v%d- v%d- v%d-\n","\n"},
-		{"\nBOR v%d- v%d- [^\n]*\n","\n"}
-	},
-	EssentialMinify = {
- -- Some regex fails, this can help by trimming spaces/tabs, and blank lines...
-		{'\n%s*(.-)%s*\n','\n%1\n'}, -- trim tabs
-		{'%s*\n%s*','\n'}, -- trim tabs
-		{'\n\n','\n'}, --remove blank line (doesnt do anything?)
--- useless gg assembly annotation (untested)
-	--{'\n; %.end local v%d- "%(for generator%)"\n','\n'},
-	--{'\n; %.end local v%d- "%(for state%)"\n','\n'},
-	--{'\n; %.end local v%d- "%(for control%)"\n','\n'},
-	--{'\n; %.end local v%d- "%(for key%)"\n','\n'},
-	},
-	JmpObf = {
-	--tries to remove some JMP obfuscations (this wont work on JMP obfuscated instruction though)
-	--{'\nJMP :goto_(%d-)  ; (%-%d-) ↑\n',function(l,o)l,o=tonumber(l),tonumber(o) return l > 0 or l < -999 and""or"JMP :goto_"..l.."  ; "..o.." ↑\n"end},
-	--{'\nJMP :goto_(%d-)  ; (%d-) ↓\n'  ,function(l,o)l,o=tonumber(l),tonumber(o) return l < 0 or l >  999 and""or"JMP :goto_"..l.."  ; "..o.." ↓\n"end},
-		{'\nJMP :goto_(%d-)  ; 0 ↓\n:goto_(%d-)',function(l,o)return a==b and''or'\nJMP :goto_'..a..'  ; 0 ↓\n:goto_'..b end},
-	--{'\nJMP :goto_(%d-)  ; 0 ↓\n:goto_(%d-)',function(l,o)return a==b and'\n:goto_'..b or'\nJMP :goto_'..a..'  ; 0 ↓\n:goto_'..b end},
-	},
 }
+_g.cfg.enc = _g.enc_wrap_XOR -- useless anyway lol, handled on the bottom
+_g.cfg.xdenc = _g.xdenc_XOR -- this means XOR Enc.. Dec..
+_g.cfg.dec_wrap_factory = _g.dec_wrap_XOR
 --————————————————————————————————--
 
 
 
 
 --— Core functions ———————————————--
-function MENU()
+function _g.MENU()
 -- TODO: maybe make remove biglasm in patches menu a separate option in main menu
 	local CH = gg.choice({
 		"🔐 1. Encrypt Lua",
@@ -425,23 +424,30 @@ function MENU()
 		"📦 8. Run script in isolated container (uses VirtGG)",
 		"__about__",
 		"__exit__",
-	},nil,"ABJ4403's LuaTools "..cfg.VERSION)
-	if CH == 1 then wrapper_encryptLua()
-	elseif CH == 2 then wrapper_compileLua()
-	elseif CH == 3 then wrapper_luacAssembly()
-	elseif CH == 4 then wrapper_fixLuacHeader()
-	elseif CH == 5 then wrapper_removeBigLASM()
-	elseif CH == 6 then wrapper_patches()
-	elseif CH == 7 then wrapper_injectCodeToLuac()
-	elseif CH == 8 then wrapper_secureRun()
-	elseif CH == 9 then MENU_about()
+	},nil,"ABJ4403's LuaTools ".._g.cfg.VERSION)
+	if CH == 1 then _g.wrapper_encryptLua()
+	elseif CH == 2 then _g.wrapper_compileLua()
+	elseif CH == 3 then _g.wrapper_luacAssembly()
+	elseif CH == 4 then _g.wrapper_fixLuacHeader()
+	elseif CH == 5 then _g.wrapper_removeBigLASM()
+	elseif CH == 6 then _g.wrapper_patches()
+	elseif CH == 7 then _g.wrapper_injectCodeToLuac()
+	elseif CH == 8 then _g.wrapper_secureRun()
+	elseif CH == 9 then _g.MENU_about()
 	elseif CH == 10 then
 		gg.setVisible(true)
+--[[print("[D] Debugging mode.")
+		for i in pairs(_G) do
+			print("[D] _G."..i)
+		end
+		for i in pairs(_ENV) do
+			print("[D] _ENV."..i)
+		end]]
 		print("[+] Script quit safely.")
 		os.exit()
 	end
 end
-function MENU_about()
+function _g.MENU_about()
 	local CH = gg.choice({
 		"__about__",
 		"Features",
@@ -449,16 +455,16 @@ function MENU_about()
 		"Credits",
 		"Encryption test",
 		"__back__"
-	},nil,"ABJ4403's LuaTools "..cfg.VERSION)
+	},nil,"ABJ4403's LuaTools ".._g.cfg.VERSION)
 	if CH == 1 then
-		gg.alert("ABJ4403's LuaTools v"..cfg.VERSION..[[ © 2022-2023
+		gg.alert("ABJ4403's LuaTools v".._g.cfg.VERSION..[[ © 2022-2023
 Manage your Lua scripts on the go!
 
 Why did i make this?
 Just to make my life (maybe yours too) easier. and not having to install other proprietary APKs, executables, or even proprietary decryptor/encryptor that can only do one thing and its worst at the same time (eg: PG Encrypt, but no way to decrypt it in the same place, and vice versa. And also there's lots of proprietary gg Lua script out there. maybe you want to clean its garbage code so it can run faster? or run in in secure isolated environment so you can have a peace of mind knowing the files on your phone wont get removed by mallicious `os.remove` API call, or overwriting your files using `io.open/write/read` API call, or executing mallicious commands using `os.execute` API, or you dont want your data to get stolen using `gg.makeRequest` API? Maybe you also wanted to encrypt the script in the correct way because you wanted to share a script, but also realized that your script is too much risky to share to public because you dont want bad cheater (aka. the abuser) uses too much out of your script to hurt other online players? Or you need that little extra tiny SPEED by precompiling the source script and removing its hidden garbage code too.
 
 I created this under 24 hour (on a phone btw!) as a challenge :D So it would be really appreciated if you can contribute to LuaTools GitHub repository (once the script has been open-sourced: https://github.com/ABJ4403/LuaTools) or give a star to my project on GitHub. or simply credit my work (by not removing mentions about me and others in this script :) Thank you :D
-]]) MENU_about()
+]]) _g.MENU_about()
 	elseif CH == 2 then gg.alert([[Features:
 + Simple, no bloat (no blingy nonsense, no fake loading).
 + Always FOSS (Free and Open-source), Licensed under GPL v3
@@ -502,7 +508,7 @@ I created this under 24 hour (on a phone btw!) as a challenge :D So it would be 
 	+ Protect your device from unwanted script modification (os.execute,os.remove,gg.makeRequest,etc).
 	. Grab a password from basic pwall script (untested).
 	. Run script with different version/package name.
-+ Remove BigLASM (untested, because i got no real example to test against).]]) MENU_about()
++ Remove BigLASM (untested, because i got no real example to test against).]]) _g.MENU_about()
 	elseif CH == 3 then gg.alert("License:\nLuaTools is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.\n\nLuaTools is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the GNU General Public License for more details.\n\nYou should have received a copy of the GNU General Public License along with LuaTools.	If not, see https://gnu.org/licenses\n\n"..[[VirtGG License (proprietary for an early development version for abuse reason):
 VirtGG © 2022-2023 ABJ4403, End User License Agreement.
 You are allowed to:
@@ -511,8 +517,8 @@ You are NOT ALLOWED TO:
 - Redistribute the code.
 - Reverse-engineer the code.
 - Include it in your project.
-All rights reserved.]]) MENU_about()
-	elseif CH == 4 then gg.alert("Credits:\n• ABJ4403 - Original creator.\n• Veyron, HBXVPN - Obfuscation codes.\n• Enyby - For some portion of Script Compiler 3.7 source codes (specifically the dump input field).\n• SwinXTools - for Remove LASM Block deobfuscation codes.\n• Daddyaaaaaaa - for Remove blocker 1 deobfuscation codes.\n• LuaGGEG, Angela, MafiaWar - for Remove BigLASM code.") MENU_about()
+All rights reserved.]]) _g.MENU_about()
+	elseif CH == 4 then gg.alert("Credits:\n• ABJ4403 - Original creator.\n• Veyron, HBXVPN - Obfuscation codes.\n• Enyby - For some portion of Script Compiler 3.7 source codes (specifically the dump input field).\n• SwinXTools - for Remove LASM Block deobfuscation codes.\n• Daddyaaaaaaa - for Remove blocker 1 deobfuscation codes.\n• LuaGGEG, Angela, MafiaWar - for Remove BigLASM code.") _g.MENU_about()
 	elseif CH == 5 then gg.alert([=====[ ——— Encryption test ———
 Texts below shouldn't look jumbled up.
 
@@ -537,11 +543,11 @@ Annotation test:
 --[[Hello World!]]
 --[==[Hello World!]==]
 
- ——— End of encryption test ———]=====]) MENU_about()
-	elseif CH == 6 then CH = nil MENU() end
+ ——— End of encryption test ———]=====]) _g.MENU_about()
+	elseif CH == 6 then _g.MENU() end
 end
 
-function wrapper_encryptLua()
+function _g.wrapper_encryptLua()
 	local CH = gg.prompt(
 	{
 		'📂 Input File (make sure the extension is .lua):', -- 1
@@ -571,32 +577,32 @@ function wrapper_encryptLua()
 		'💬️️ Warn Value Peeking', --25
 	},
 	{
-		cfg.fileChoice,-- 1
-		cfg.obfModSettings.stripAnnotations,
-		cfg.obfModSettings.encryptStrings,
-		cfg.obfModSettings.encryptTables,
-		cfg.obfModSettings.scriptPW, -- 5
-		cfg.obfModSettings.savePW,
-		cfg.obfModSettings.scriptExpiry,
-		cfg.obfModSettings.ggPkg,
-		cfg.obfModSettings.appPkg,
-		cfg.obfModSettings.minGGVer, -- 10
-		cfg.obfModSettings.minGGBuildVer,
-		cfg.obfModSettings.allowNewGGBuildVer,
+		_g.cfg.fileChoice,-- 1
+		_g.cfg.obfOpts.stripAnnotations,
+		_g.cfg.obfOpts.encryptStrings,
+		_g.cfg.obfOpts.encryptTables,
+		_g.cfg.obfOpts.scriptPW, -- 5
+		_g.cfg.obfOpts.savePW,
+		_g.cfg.obfOpts.scriptExpiry,
+		_g.cfg.obfOpts.ggPkg,
+		_g.cfg.obfOpts.appPkg,
+		_g.cfg.obfOpts.minGGVer, -- 10
+		_g.cfg.obfOpts.minGGBuildVer,
+		_g.cfg.obfOpts.allowNewGGBuildVer,
 		--
-		cfg.obfModSettings.text.promoteYourself,
-		cfg.obfModSettings.text.inputPass,
-		cfg.obfModSettings.text.failInvalidPW, -- 15
-		cfg.obfModSettings.text.failAppPkgInvalid,
-		cfg.obfModSettings.text.failDatePassed,
-		cfg.obfModSettings.text.failDeniedPkgs,
-		cfg.obfModSettings.text.failGGPkgInvalid,
-		cfg.obfModSettings.text.failGGVerBelow, -- 20
-		cfg.obfModSettings.text.failHookDetected,
-		cfg.obfModSettings.text.failIllegalMod,
-		cfg.obfModSettings.text.failLogDetected,
-		cfg.obfModSettings.text.failRenamed,
-		cfg.obfModSettings.text.warnPeeking, -- 25
+		_g.cfg.obfOpts.text.promoteYourself,
+		_g.cfg.obfOpts.text.inputPass,
+		_g.cfg.obfOpts.text.failInvalidPW, -- 15
+		_g.cfg.obfOpts.text.failAppPkgInvalid,
+		_g.cfg.obfOpts.text.failDatePassed,
+		_g.cfg.obfOpts.text.failDeniedPkgs,
+		_g.cfg.obfOpts.text.failGGPkgInvalid,
+		_g.cfg.obfOpts.text.failGGVerBelow, -- 20
+		_g.cfg.obfOpts.text.failHookDetected,
+		_g.cfg.obfOpts.text.failIllegalMod,
+		_g.cfg.obfOpts.text.failLogDetected,
+		_g.cfg.obfOpts.text.failRenamed,
+		_g.cfg.obfOpts.text.warnPeeking, -- 25
 	},
 	{
 		'file', -- 1
@@ -629,98 +635,98 @@ function wrapper_encryptLua()
 	);
 	if CH and CH[1] then
 		gg.toast("Encrypting, Please wait... this will take maximum of couple seconds")
-		cfg.fileChoice = CH[1]:gsub(".lua$",'')
-		cfg.obfModSettings.stripAnnotations = CH[2]
-		cfg.obfModSettings.encryptStrings = CH[3]
-		cfg.obfModSettings.encryptTables = CH[4]
-		cfg.obfModSettings.scriptPW = CH[5]
-		cfg.obfModSettings.savePW = CH[6]
-		cfg.obfModSettings.scriptExpiry = CH[7]
-		cfg.obfModSettings.ggPkg = CH[8]
-		cfg.obfModSettings.appPkg = CH[9]
-		cfg.obfModSettings.minGGVer = CH[10]
-		cfg.obfModSettings.minGGBuildVer = CH[11]
-		cfg.obfModSettings.allowNewGGBuildVer = CH[12]
+		_g.cfg.fileChoice = CH[1]:gsub(".lua$",'')
+		_g.cfg.obfOpts.stripAnnotations = CH[2]
+		_g.cfg.obfOpts.encryptStrings = CH[3]
+		_g.cfg.obfOpts.encryptTables = CH[4]
+		_g.cfg.obfOpts.scriptPW = CH[5]
+		_g.cfg.obfOpts.savePW = CH[6]
+		_g.cfg.obfOpts.scriptExpiry = CH[7]
+		_g.cfg.obfOpts.ggPkg = CH[8]
+		_g.cfg.obfOpts.appPkg = CH[9]
+		_g.cfg.obfOpts.minGGVer = CH[10]
+		_g.cfg.obfOpts.minGGBuildVer = CH[11]
+		_g.cfg.obfOpts.allowNewGGBuildVer = CH[12]
 		--
-		cfg.obfModSettings.text.promoteYourself = CH[13]
-		cfg.obfModSettings.text.inputPass = CH[14]
-		cfg.obfModSettings.text.failInvalidPW = CH[15]
-		cfg.obfModSettings.text.failAppPkgInvalid = CH[16]
-		cfg.obfModSettings.text.failDatePassed = CH[17]
-		cfg.obfModSettings.text.failDeniedPkgs = CH[18]
-		cfg.obfModSettings.text.failGGPkgInvalid = CH[19]
-		cfg.obfModSettings.text.failGGVerBelow = CH[20]
-		cfg.obfModSettings.text.failHookDetected = CH[21]
-		cfg.obfModSettings.text.failIllegalMod = CH[22]
-		cfg.obfModSettings.text.failLogDetected = CH[23]
-		cfg.obfModSettings.text.failRenamed = CH[24]
-		cfg.obfModSettings.text.warnPeeking = CH[25]
-		encryptLua()
-		print("[✔] Finished encrypting "..cfg.fileChoice.."!\n[+] Input File: "..cfg.fileChoice..".lua\n[+] Output File: "..cfg.fileChoice..".enc.lua")
+		_g.cfg.obfOpts.text.promoteYourself = CH[13]
+		_g.cfg.obfOpts.text.inputPass = CH[14]
+		_g.cfg.obfOpts.text.failInvalidPW = CH[15]
+		_g.cfg.obfOpts.text.failAppPkgInvalid = CH[16]
+		_g.cfg.obfOpts.text.failDatePassed = CH[17]
+		_g.cfg.obfOpts.text.failDeniedPkgs = CH[18]
+		_g.cfg.obfOpts.text.failGGPkgInvalid = CH[19]
+		_g.cfg.obfOpts.text.failGGVerBelow = CH[20]
+		_g.cfg.obfOpts.text.failHookDetected = CH[21]
+		_g.cfg.obfOpts.text.failIllegalMod = CH[22]
+		_g.cfg.obfOpts.text.failLogDetected = CH[23]
+		_g.cfg.obfOpts.text.failRenamed = CH[24]
+		_g.cfg.obfOpts.text.warnPeeking = CH[25]
+		_g.encryptLua()
+		print("[✔] Finished encrypting ".._g.cfg.fileChoice.."!\n[+] Input File: ".._g.cfg.fileChoice..".lua\n[+] Output File: ".._g.cfg.fileChoice..".enc.lua")
 		gg.toast("[✔] Encryption complete.")
 	end
 end
-function wrapper_compileLua()
+function _g.wrapper_compileLua()
 	-- Ask user for file...
 	local CH = gg.prompt({
 		'📂 Input File (make sure the extension is .lua):',
 		'Strip debugging symbol (not recommended)',
 		'Preserve namespaces',
 		'Decompile (TODO-LoPrio,Waiting)'
-	},{cfg.fileChoice,false,true,false},{'file','checkbox','checkbox','checkbox'});
+	},{_g.cfg.fileChoice,false,true,false},{'file','checkbox','checkbox','checkbox'});
 	if CH and CH[1] then
 		gg.toast("Compiling, Please wait... this will take maximum of couple seconds")
 		CH[1] = CH[1]:gsub(".lua$",'')
-		cfg.fileChoice = CH[1]
-		compileLua(".luac",CH[2],CH[3])
+		_g.cfg.fileChoice = CH[1]
+		_g.compileLua(".luac",CH[2],CH[3])
 		print("[✔] Finished Compiling "..CH[1].."!\n[+] Input File: "..CH[1]..".lua\n[+] Output File: "..CH[1]..".luac")
 		gg.toast("Compiling complete.")
 	end
 end
-function wrapper_luacAssembly()
+function _g.wrapper_luacAssembly()
 	-- Ask user for file...
 	local CH = gg.prompt({
 		'📂 Input File (make sure the extension is either .luac/.lasm):',
 		'Assemble'
-	},{cfg.fileChoice,false},{'file','checkbox'});
+	},{_g.cfg.fileChoice,false},{'file','checkbox'});
 	if CH and CH[1] then
 		CH[1] = CH[1]:gsub("%.luac$",''):gsub("%.lasm$",'')
 		if CH[2] == true then
 			gg.toast("Assembling, please wait... this may take couple seconds")
-			cfg.fileChoice = CH[1]
-			assembleLua(false)
+			_g.cfg.fileChoice = CH[1]
+			_g.assembleLua(false)
 			print("[✔] Finished Assembling "..CH[1].."!\n[+] Input File: "..CH[1]..".lasm\n[+] Output File: "..CH[1]..".luac")
 			gg.toast("Assembling complete.")
 		else
 			gg.toast("Disassembling, please wait... this may take couple seconds")
-			cfg.fileChoice = CH[1]
-			disassembleLua('.luac',false)
+			_g.cfg.fileChoice = CH[1]
+			_g.disassembleLua('.luac',false)
 			print("[✔] Disassembled "..CH[1].."!\n[+] Input File: "..CH[1]..".luac\n[+] Output File: "..CH[1]..".lasm")
 			gg.toast("Disassembling complete.")
 		end
 	end
 end
-function wrapper_fixLuacHeader()
+function _g.wrapper_fixLuacHeader()
 	-- Ask user for file...
-	local CH = gg.prompt({'📂 Input File (make sure the extension is .enc.lua, BTW i recommend reassemble the script instead of fixing the header):'},{cfg.fileChoice},{'file'});
+	local CH = gg.prompt({'📂 Input File (make sure the extension is .enc.lua, BTW i recommend reassemble the script instead of fixing the header):'},{_g.cfg.fileChoice},{'file'});
 	if CH and CH[1] then
 		gg.toast("Fixing Lua header, Please wait...")
-		cfg.fileChoice = CH[1]:gsub(".enc.lua$",'')
-		modFileHeader('LuaFixHeader')
+		_g.cfg.fileChoice = CH[1]:gsub(".enc.lua$",'')
+		_g.modFileHeader('LuaFixHeader')
 		gg.toast("Lua header fixed.")
 	end
 end
-function wrapper_removeBigLASM()
+function _g.wrapper_removeBigLASM()
 	-- Ask user for file...
-	local CH = gg.prompt({'📂 Input File (make sure the extension is .enc.lua):'},{cfg.fileChoice},{'file'});
+	local CH = gg.prompt({'📂 Input File (make sure the extension is .enc.lua):'},{_g.cfg.fileChoice},{'file'});
 	if CH and CH[1] then
 		gg.toast("Fixing Lua header, Please wait...")
-		cfg.fileChoice = CH[1]:gsub(".enc.lua$",'')
-		removeBigLasm()
+		_g.cfg.fileChoice = CH[1]:gsub(".enc.lua$",'')
+		_g.removeBigLasm()
 		gg.toast("BigLASM Removed!")
 	end
 end
-function wrapper_patches()
+function _g.wrapper_patches()
 	local CH = gg.prompt({
 		'📂 Input File (make sure the extension is .enc.lua/.lasm, will directly write to lasm if using that extension):', -- 1
 		'Remove Garbage (recommended)', -- 3
@@ -730,7 +736,7 @@ function wrapper_patches()
 		"Remove some JMP Obfuscations", -- 7
 		'Remove ABJ4403\'s encryption to some extent', -- 8
 	},{
-		cfg.fileChoice,
+		_g.cfg.fileChoice,
 		true,false,false, -- 234
 		false,false,false -- 567
 	},{
@@ -741,27 +747,27 @@ function wrapper_patches()
 	if CH and CH[1] then
 		local isAsmFile = CH[1]:match('.lasm$')
 		CH[1] = isAsmFile and CH[1]:gsub(".lasm$",'') or CH[1]:gsub(".enc.lua$",'')
-		cfg.fileChoice = CH[1]
+		_g.cfg.fileChoice = CH[1]
 
  -- Assembly Patching
-		DATA = isAsmFile and io.readFile(cfg.fileChoice..".lasm") or disassembleLua('.enc.lua',true)
-		gg.toast("Running selected operations... 1/10") patchAssembly("EssentialMinify")
-		if cfg.debugMode then io.writeFile(cfg.fileChoice..".dbg.lasm",DATA) end
-		if CH[2] then gg.toast("Running selected operations... 2/10") patchAssembly("RemoveGarbage") print("[✔] Garbages removed!")end
-		if CH[7] then gg.toast("Running selected operations... 3/10") patchAssembly("selfDecrypt") print("[✔] Self decrypted! (some)")end
-		if CH[3] then gg.toast("Running selected operations... 4/10") patchAssembly("RemoveCodeHider") print("[✔] Hide codes removed!")end
-		if CH[4] then gg.toast("Running selected operations... 5/10") patchAssembly("RemoveLasmBlock") print("[✔] LasmBlock Removed!")end
-		if CH[5] then gg.toast("Running selected operations... 6/10") patchAssembly("RemoveBlocker1") print("[✔] Blockers patched!")end
-		if CH[6] then gg.toast("Running selected operations... 8/10") patchAssembly("JmpObf") print("[✔] Removed JMP Obfuscations!")end
+		_g.DATA = isAsmFile and io.readFile(_g.cfg.fileChoice..".lasm") or _g.disassembleLua('.enc.lua',true)
+		gg.toast("Running selected operations... 1/10") _g.patchAssembly("EssentialMinify")
+		if _g.cfg.debugMode then io.writeFile(_g.cfg.fileChoice..".dbg.lasm",_g.DATA) end
+		if CH[2] then gg.toast("Running selected operations... 2/10") _g.patchAssembly("RemoveGarbage") print("[✔] Garbages removed!")end
+		if CH[7] then gg.toast("Running selected operations... 3/10") _g.patchAssembly("selfDecrypt") print("[✔] Self decrypted! (some)")end
+		if CH[3] then gg.toast("Running selected operations... 4/10") _g.patchAssembly("RemoveCodeHider") print("[✔] Hide codes removed!")end
+		if CH[4] then gg.toast("Running selected operations... 5/10") _g.patchAssembly("RemoveLasmBlock") print("[✔] LasmBlock Removed!")end
+		if CH[5] then gg.toast("Running selected operations... 6/10") _g.patchAssembly("RemoveBlocker1") print("[✔] Blockers patched!")end
+		if CH[6] then gg.toast("Running selected operations... 8/10") _g.patchAssembly("JmpObf") print("[✔] Removed JMP Obfuscations!")end
 	--8
 		gg.toast("Running selected operations... 9/10")
-		io.writeFile(cfg.fileChoice..".lasm",DATA)
-		if isAsmFile then print('[i] Lua Assembly file format detected, script will not be compiled.') else assembleLua(true) end
-		print("\n[+] Input File: "..cfg.fileChoice..".enc.lua\n[+] Output File: "..cfg.fileChoice..".luac")
+		io.writeFile(_g.cfg.fileChoice..".lasm",_g.DATA)
+		if isAsmFile then print('[i] Lua Assembly file format detected, script will not be compiled.') else _g.assembleLua(true) end
+		print("\n[+] Input File: ".._g.cfg.fileChoice..".enc.lua\n[+] Output File: ".._g.cfg.fileChoice..".luac")
 		gg.toast("Operation completed!")
 	end
 end
-function wrapper_injectCodeToLuac()
+function _g.wrapper_injectCodeToLuac()
 	-- Warning: Unstable PoC
 	-- And lots of things didnt work
 	local CH = gg.prompt({
@@ -769,8 +775,8 @@ function wrapper_injectCodeToLuac()
 		'📂 Input Injected code (make sure the extension is .lua/.lasm):',
 		'Set max stack size to 250 (fixes ArrayOutOfBound error)'
 	},{
-		cfg.fileChoice,
-		cfg.fileChoice,
+		_g.cfg.fileChoice,
+		_g.cfg.fileChoice,
 		false
 	},{
 		'file','file','checkbox',
@@ -786,17 +792,17 @@ function wrapper_injectCodeToLuac()
 
 		-- Disassemble
 		gg.toast("Disassembling...")
-		cfg.fileChoice = CH[1]
-		DATA = isTargetAsmFile and io.readFile(CH[1]..".lasm") or disassembleLua('.lua',true)
-		cfg.fileChoice = CH[2]
-		INJECTED_CODE = isInjectAsmFile and io.readFile(CH[2]..".lasm") or disassembleLua('.lua',true)
-		cfg.fileChoice = CH[1]
+		_g.cfg.fileChoice = CH[1]
+		_g.DATA = isTargetAsmFile and io.readFile(CH[1]..".lasm") or _g.disassembleLua('.lua',true)
+		_g.cfg.fileChoice = CH[2]
+		INJECTED_CODE = isInjectAsmFile and io.readFile(CH[2]..".lasm") or _g.disassembleLua('.lua',true)
+		_g.cfg.fileChoice = CH[1]
 
 		-- Cleanup assembly code
 		gg.toast("Cleaning assembly codes...")
-		for j=1,#deobfPatch.EssentialMinify do
-			DATA          = DATA:gsub(deobfPatch.EssentialMinify[j][1],deobfPatch.EssentialMinify[j][2])
-			INJECTED_CODE = INJECTED_CODE:gsub(deobfPatch.EssentialMinify[j][1],deobfPatch.EssentialMinify[j][2])
+		for j=1,#_g.cfg.deobfPatch.EssentialMinify do
+			_g.DATA          = _g.DATA:gsub(_g.cfg.deobfPatch.EssentialMinify[j][1],_g.cfg.deobfPatch.EssentialMinify[j][2])
+			INJECTED_CODE = INJECTED_CODE:gsub(_g.cfg.deobfPatch.EssentialMinify[j][1],_g.cfg.deobfPatch.EssentialMinify[j][2])
 		end
 
 		-- stuff
@@ -814,12 +820,12 @@ function wrapper_injectCodeToLuac()
 
 		-- Split instructions and functions
 		gg.toast("Splitting instruction & funcs...1")
-		DATA = splitLuaAssembly(DATA)
+		_g.DATA = _g.splitLuaAssembly(_g.DATA)
 		gg.toast("Splitting instruction & funcs...2")
-		INJECTED_CODE = splitLuaAssembly(INJECTED_CODE)
+		INJECTED_CODE = _g.splitLuaAssembly(INJECTED_CODE)
 
 		-- Fix ArrayOutOfBounds error (TODO: can we calculate the real value instead??)
-		if CH[3] then DATA[1] = DATA[1]:gsub('\n%.maxstacksize %d-\n','\n.maxstacksize 250\n',1) end
+		if CH[3] then _g.DATA[1] = _g.DATA[1]:gsub('\n%.maxstacksize %d-\n','\n.maxstacksize 250\n',1) end
 
 		-- remove RETURN after function (if not removed, the script will just quit :/)
 		gg.toast("Fixes...")
@@ -836,27 +842,27 @@ function wrapper_injectCodeToLuac()
 
 		-- Combine the script in these orders:
 		-- GG LASM Header, Source, Injected instructions, Target instructions, Target functions, Injected functions, GG LASM Header
-		DATA =
+		_g.DATA =
 			ggAssemblyHeader[1]..'\n'..
-			DATA[1]..'\n'..
+			_g.DATA[1]..'\n'..
 			INJECTED_CODE[2]..'\n'..
-			DATA[2]..'\n'..
-			DATA[3]..'\n'..
+			_g.DATA[2]..'\n'..
+			_g.DATA[3]..'\n'..
 			INJECTED_CODE[3]..'\n'..
 			ggAssemblyHeader[2]
 		ggAssemblyHeader = nil
 		INJECTED_CODE = nil
 
 		-- Assemble Lua
-		io.writeFile(cfg.fileChoice..".lasm",DATA)
-		if isTargetAsmFile then print('[i] Lua Assembly file format detected, script will not be compiled.') else assembleLua(true) end
+		io.writeFile(_g.cfg.fileChoice..".lasm",_g.DATA)
+		if isTargetAsmFile then print('[i] Lua Assembly file format detected, script will not be compiled.') else _g.assembleLua(true) end
 
  -- Completed
-		print("\n[+] Input File: "..cfg.fileChoice..".lua\n[+] Output File: "..cfg.fileChoice..".luac")
+		print("\n[+] Input File: ".._g.cfg.fileChoice..".lua\n[+] Output File: ".._g.cfg.fileChoice..".luac")
 		gg.toast("Operation completed!")
 	end
 end
-function wrapper_secureRun()
+function _g.wrapper_secureRun()
 	local opts = gg.prompt({
 		"📂 Script:", -- 1
 		"📂 Wrapper script (commonly used for other modifications):", -- 2
@@ -877,7 +883,7 @@ function wrapper_secureRun()
 		"📜 Print log (TODO)", -- 17
 		"📜 Dump log (TODO)", -- 18
 	},{
-		cfg.fileChoice, -- 1
+		_g.cfg.fileChoice, -- 1
 		nil, -- 2
 		true, -- 3
 		true, -- 4
@@ -894,7 +900,7 @@ function wrapper_secureRun()
 		false, -- 15
 		false, -- 16
 		true, -- 17
-		cfg.scriptPath..os.date'/ScriptLog_%y%m%d_%H%M%S.log', -- 18
+		_g.cfg.scriptPath..os.date'/ScriptLog_%y%m%d_%H%M%S.log', -- 18
 	},{
 		"file", -- 1
 		"file", -- 2
@@ -916,7 +922,7 @@ function wrapper_secureRun()
 		"text", -- 18
 	})
 	if opts and opts[1] then
-		secureRun({
+		_g.secureRun({
 			targetScript=opts[1],
 			wrapScript=opts[2],
 			disableMalFn=opts[3],
@@ -929,7 +935,7 @@ function wrapper_secureRun()
 			ggVerInt=opts[10],
 			ggVerBuild=opts[11],
 			ggPkgName=opts[12],
-			ggTargetPkgName=opts[13],
+			targetPkg=opts[13],
 			minLogSizeLoad=opts[14],
 			verboseLog=opts[15],
 			quietLog=opts[16],
@@ -939,20 +945,20 @@ function wrapper_secureRun()
 	end
 end
 
-function encryptLua()
+function _g.encryptLua()
 	-- Wrap the decryptor script
 	print("[i] Wrapping decryptor...")
-	cfg.obfModSettings.pwHash = randstr() -- separate XOR key for password (TODO: but we need to implement another decryptor..., or change the whole decryptor)
-	cfg.enc = cfg.enc(cfg.obfModSettings.pwHash) -- add key
-	cfg.dec_wrap = "local function decode"..cfg.dec_wrap_factory(cfg.obfModSettings.pwHash).." end\n"
+	_g.cfg.obfOpts.pwHash = _g.randStr() -- separate XOR key for password (TODO: but we need to implement another decryptor..., or change the whole decryptor)
+	_g.cfg.enc = _g.cfg.enc(_g.cfg.obfOpts.pwHash) -- add key
+	_g.cfg.dec_wrap = "local function decode".._g.cfg.dec_wrap_factory(_g.cfg.obfOpts.pwHash).." end\n"
 
 	-- Put the input file content to buffer
 	gg.toast("[i] Reading file contents to buffer...")
 	print("[i] Reading file contents to buffer...")
 	collectgarbage()
-	DATA = io.readFile(cfg.fileChoice..'.lua')
+	_g.DATA = io.readFile(_g.cfg.fileChoice..'.lua')
 
-	if cfg.obfModSettings.stripAnnotations then
+	if _g.cfg.obfOpts.stripAnnotations then
 		print("[i] Removing annotations to prevent parsing error...")
 		local totalReplaced,all_string,tmp = 0,{
 			'%-%-%[%[.-%]%]',
@@ -961,16 +967,16 @@ function encryptLua()
 		collectgarbage()
 		for i=1,#all_string do
 			gg.toast("[i] Removing annotations to prevent parsing error... ("..i..'/'..#all_string..')')
-			DATA,tmp = string.gsub(DATA,all_string[i],'')
+			_g.DATA,tmp = string.gsub(_g.DATA,all_string[i],'')
 			totalReplaced = totalReplaced + tmp
 		end
 		print("[i] "..totalReplaced.." annotations/comments removed!")
 	end
 
 	print("[i] Injecting anti os.exit detection...")
-	DATA = DATA:gsub('os%.exit%(%)','os.exit()print("[AntiExitDetect] Anti exit detected, forcing script to crash")return(nil)()') -- force exit
+	_g.DATA = _g.DATA:gsub('os%.exit%(%)','os.exit()print("[AntiExitDetect] Anti exit detected, forcing script to crash")return(nil)()') -- force exit
 
-	if cfg.obfModSettings.encryptStrings then
+	if _g.cfg.obfOpts.encryptStrings then
 		gg.toast("[i] Encrypting strings...")
 		print("[i] Encrypting strings...")
 		print(" |  Developer note: String encryption is experimental! you might encounter errors when compiling the script.")
@@ -987,14 +993,14 @@ function encryptLua()
 			'%[%[(.-)%]%]',
 		}
 		for i=1,#all_string do
-			DATA,tmp = string.gsub(DATA,all_string[i],cfg.enc) -- untested
+			_g.DATA,tmp = string.gsub(_g.DATA,all_string[i],_g.cfg.enc) -- untested
 			totalReplaced = totalReplaced + tmp
 		end
 		print("[i] "..totalReplaced.." strings encrypted!")
 		totalReplaced,all_string,tmp = nil,nil,nil
 	end
 
-	if cfg.obfModSettings.encryptTables then
+	if _g.cfg.obfOpts.encryptTables then
 	-- below can be buggy (in case of function decode([==[ENCRYPTED]==])[CONTENT]end.
 	-- replace any `function bla.bla()` > `bla.bla = function()` to prevent such bug from occuring
 		gg.toast("[i] Encrypting common table queries...")
@@ -1007,15 +1013,15 @@ function encryptLua()
 		collectgarbage()
 		for _,v in ipairs{"gg","io","os","string","math","table","debug","bit32","utf8"} do
 			print(" |  "..v)
-		--DATA,tmp = DATA:gsub(v..'%.(%a+)%(', function(s)return v..'['..cfg.enc(s)..'](' end) -- table.insert()
+		--_g.DATA,tmp = _g.DATA:gsub(v..'%.(%a+)%(', function(s)return v..'['.._g.cfg.enc(s)..'](' end) -- table.insert()
 		--EXPERIMENTAL
-		--DATA     = DATA:gsub(v..'%.(%a+)%{', function(s)return v..'['..cfg.enc(s)..']{' end) -- table.insert{}
-		--DATA     = DATA:gsub(v..'%.(%a+)%"', function(s)return v..'['..cfg.enc(s)..']"' end) -- table.insert""
-		--DATA     = DATA:gsub(v..'%.(%a+)%\'',function(s)return v..'['..cfg.enc(s)..']\''end) -- table.insert''
-			DATA,tmp = DATA:gsub(v..'%.(%a+)%(', function(s)return '_ENV['..cfg.enc(v)..']['..cfg.enc(s)..'](' end) -- table.insert()
-			DATA     = DATA:gsub(v..'%.(%a+)%{', function(s)return '_ENV['..cfg.enc(v)..']['..cfg.enc(s)..']{' end) -- table.insert{}
-			DATA     = DATA:gsub(v..'%.(%a+)%"', function(s)return '_ENV['..cfg.enc(v)..']['..cfg.enc(s)..']"' end) -- table.insert""
-			DATA     = DATA:gsub(v..'%.(%a+)%\'',function(s)return '_ENV['..cfg.enc(v)..']['..cfg.enc(s)..']\''end) -- table.insert''
+		--_g.DATA     = _g.DATA:gsub(v..'%.(%a+)%{', function(s)return v..'['.._g.cfg.enc(s)..']{' end) -- table.insert{}
+		--_g.DATA     = _g.DATA:gsub(v..'%.(%a+)%"', function(s)return v..'['.._g.cfg.enc(s)..']"' end) -- table.insert""
+		--_g.DATA     = _g.DATA:gsub(v..'%.(%a+)%\'',function(s)return v..'['.._g.cfg.enc(s)..']\''end) -- table.insert''
+			_g.DATA,tmp = _g.DATA:gsub(v..'%.(%a+)%(', function(s)return '_ENV['.._g.cfg.enc(v)..']['.._g.cfg.enc(s)..'](' end) -- table.insert()
+			_g.DATA     = _g.DATA:gsub(v..'%.(%a+)%{', function(s)return '_ENV['.._g.cfg.enc(v)..']['.._g.cfg.enc(s)..']{' end) -- table.insert{}
+			_g.DATA     = _g.DATA:gsub(v..'%.(%a+)%"', function(s)return '_ENV['.._g.cfg.enc(v)..']['.._g.cfg.enc(s)..']"' end) -- table.insert""
+			_g.DATA     = _g.DATA:gsub(v..'%.(%a+)%\'',function(s)return '_ENV['.._g.cfg.enc(v)..']['.._g.cfg.enc(s)..']\''end) -- table.insert''
 			totalReplaced = totalReplaced + tmp
 		end
 		print("[i] "..totalReplaced.." common table queries encrypted!")
@@ -1024,96 +1030,96 @@ function encryptLua()
 
 	print("[i] Wrapping main function to mainPayload()...")
 	collectgarbage()
-	DATA = "local function mainPayload()local gg,os,io=gg,os,io "..DATA.."\nend mainPayload()"
+	_g.DATA = "local function mainPayload()local gg,os,io=gg,os,io ".._g.DATA.."\nend mainPayload()"
 
 	gg.toast("[i] Configuring Obfuscations...")
 	print("[i] Configuring Obfuscations...")
 	collectgarbage()
-	for i,v in pairs(obfMod) do
-		if type(v) == 'function' then obfMod[i] = v() end
+	for i,v in pairs(_g.cfg.obfMod) do
+		if type(v) == 'function' then _g.cfg.obfMod[i] = v() end
 	end
 
 	-- Append obfuscation module before script starts, and put decryptor at very beginning (applied in reverse order)
 	gg.toast("[i] Applying Obfuscations...")
 	print("[i] Applying Obfuscations... (sorted Z-A/bottom-top)")
 	collectgarbage()
-	for i,v in pairs_sorted(obfMod) do
+	for i,v in _g.pairs_sorted(_g.cfg.obfMod) do
 		print(" |  "..(i):gsub('^[A-Z]_',''))
-		DATA = 'do '..v..' end\n'..DATA
+		_g.DATA = 'do '..v..' end\n'.._g.DATA
 	end
 	print('———')
-	DATA = cfg.dec_wrap..DATA
+	_g.DATA = _g.cfg.dec_wrap.._g.DATA
 
 	-- Encryption done, "Compile" the file (in a hacky way lol)
-	cfg.enc = enc_wrap_XOR -- Restore original function
+	_g.cfg.enc = _g.enc_wrap_XOR -- Restore original function
 	collectgarbage()
-	if cfg.debugMode then io.writeFile(cfg.fileChoice..".debug.lua",DATA) end
-	compileLua(".enc.lua",true,false)
+	if _g.cfg.debugMode then io.writeFile(_g.cfg.fileChoice..".debug.lua",_g.DATA) end
+	_g.compileLua(".enc.lua",true,false)
 
 	-- Post-compile. Corrupt the Lua file header to prevent unluac from decompiling
-	modFileHeader('LuaBreakHeader')
+	_g.modFileHeader('LuaBreakHeader')
 
 	-- Restore everything back
-	dec_wrap_XOR = cfg.dec_wrap_factory
-	cfg.dec_wrap = nil
+	_g.dec_wrap_XOR = _g.cfg.dec_wrap_factory
+	_g.cfg.dec_wrap = nil
 end
-function decryptLua()
-	DATA = io.readFile(cfg.fileChoice..'.enc.lua')
+function _g.decryptLua()
+	_g.DATA = io.readFile(_g.cfg.fileChoice..'.enc.lua')
 
 	local dec_XOR_RandomKey=function(iv,key)local i,iv_,key_=0,{string.byte(iv,0,-1)},{string.byte(key,0,-1)} r=iv:gsub(".",function()i=i+1 return string.char(iv_[i]~key_[i])end)return r end
 
-	DATA = DATA:gsub('%(decode%(%[==%[(.-)%]==%],"(.-)"%)%)',function(i)return'"'..cfg.enc(i)..'"'end)
-	DATA = DATA:gsub([['gg%[decode%(%[==%[(.-)%]==%],"(.-)"%)%]%(']],function(i)return'gg.'..dec_XOR_RandomKey(i)..'('end)
+	_g.DATA = _g.DATA:gsub('%(decode%(%[==%[(.-)%]==%],"(.-)"%)%)',function(i)return'"'.._g.cfg.enc(i)..'"'end)
+	_g.DATA = _g.DATA:gsub([['gg%[decode%(%[==%[(.-)%]==%],"(.-)"%)%]%(']],function(i)return'gg.'..dec_XOR_RandomKey(i)..'('end)
 
-	io.writeFile(cfg.fileChoice..".dec.lua",DATA)
+	io.writeFile(_g.cfg.fileChoice..".dec.lua",_g.DATA)
 end
-function compileLua(fileExt,stripDebugSymbols,useNames)
+function _g.compileLua(fileExt,stripDebugSymbols,useNames)
 	gg.toast("[i] Compiling...")
-	print("[i] Compiling "..cfg.fileChoice.."...")
-	DATA,tmp = load(DATA or io.readFile(cfg.fileChoice..'.lua'))
+	print("[i] Compiling ".._g.cfg.fileChoice.."...")
+	_g.DATA,tmp = load(_g.DATA or io.readFile(_g.cfg.fileChoice..'.lua'))
 	stripDebugSymbols = stripDebugSymbols or false
 	useNames = useNames or true
-	if tmp or not DATA then
+	if tmp or not _g.DATA then
 		gg.setVisible(true)
 		gg.toast("[!] Error occured!")
-		print("[!] Error occured. There's something wrong with your script or this tool configuration.\n[!] try to enable debug mode, redo again, check and run "..cfg.fileChoice..".debug.lua to find out why")
+		print("[!] Error occured. There's something wrong with your script or this tool configuration.\n[!] try to enable debug mode, redo again, check and run ".._g.cfg.fileChoice..".debug.lua to find out why")
 		if tmp then print("[!] "..tmp.."\n==========\n")end
 	end
-	io.writeFile(cfg.fileChoice..fileExt,string.dump(DATA,stripDebugSymbols,useNames)) -- 3rd arg of strDump: use_names: A boolean value that specifies whether or not to include local variable names in the dumped function. If true, the resulting string will include local variable names. If false (default), the resulting string will not include local variable names.
+	io.writeFile(_g.cfg.fileChoice..fileExt,string.dump(_g.DATA,stripDebugSymbols,useNames)) -- 3rd arg of strDump: use_names: A boolean value that specifies whether or not to include local variable names in the dumped function. If true, the resulting string will include local variable names. If false (default), the resulting string will not include local variable names.
 end
-function decompileLua(fileExt,stripDebugSymbols)
-	print("[i] Decompiling "..cfg.fileChoice.."...")
-	DATA = DATA or io.readFile(cfg.fileChoice..'.lua')
-	if tmp or not DATA then print("[!] Error occured. There's something wrong with your script or this tool configuration.\n[!] "..tmp.."\n==========\n") end
+function _g.decompileLua(fileExt,stripDebugSymbols)
+	print("[i] Decompiling ".._g.cfg.fileChoice.."...")
+	_g.DATA = _g.DATA or io.readFile(_g.cfg.fileChoice..'.lua')
+	if tmp or not _g.DATA then print("[!] Error occured. There's something wrong with your script or this tool configuration.\n[!] "..tmp.."\n==========\n") end
 end
-function assembleLua(stripDebugSymbols)
-	print("[i] Assembling "..cfg.fileChoice.."...")
-	local fileBuffer,err = loadfile(cfg.fileChoice..".lasm")
+function _g.assembleLua(stripDebugSymbols)
+	print("[i] Assembling ".._g.cfg.fileChoice.."...")
+	local fileBuffer,err = loadfile(_g.cfg.fileChoice..".lasm")
 	if err or not fileBuffer then
 		print("[!] Failed to load lua assembly, more information:\n\n",err)
 	end
-	io.writeFile(cfg.fileChoice..".luac",string.dump(fileBuffer,stripDebugSymbols))
+	io.writeFile(_g.cfg.fileChoice..".luac",string.dump(fileBuffer,stripDebugSymbols))
 end
-function disassembleLua(fileExt,stripDebugSymbols)
-	print("[i] Disassembling "..cfg.fileChoice.."...")
+function _g.disassembleLua(fileExt,stripDebugSymbols)
+	print("[i] Disassembling ".._g.cfg.fileChoice.."...")
 	fileExt = fileExt or ".luac"
 	stripDebugSymbols = stripDebugSymbols or false
 
-	local fileBuffer,err = loadfile(cfg.fileChoice..fileExt)
+	local fileBuffer,err = loadfile(_g.cfg.fileChoice..fileExt)
 	if err or not fileBuffer then
 		print("[!] Failed to load lua script, more information:\n\n",err)
 	end
 --Strip the file debug symbols (with string.dump's 2nd argument)
 --then do the disassemble
 --gg.internal9("OutFile","","Hello") ??
-	gg.internal2(load(string.dump(fileBuffer,stripDebugSymbols)),cfg.fileChoice..".lasm")
-	return io.readFile(cfg.fileChoice..".lasm")
+	gg.internal2(load(string.dump(fileBuffer,stripDebugSymbols)),_g.cfg.fileChoice..".lasm")
+	return io.readFile(_g.cfg.fileChoice..".lasm")
 end
-function modFileHeader(headerTypes)
-	local DATA = io.open(cfg.fileChoice..".enc.lua",'r+')
-	DATA:seek('set')
+function _g.modFileHeader(headerTypes)
+	_g.DATA = io.open(_g.cfg.fileChoice..".enc.lua",'r+')
+	_g.DATA:seek('set')
 --Grab the first 4 bytes and check if the header is a valid Lua header
-	local sigCur = DATA:read(4)
+	local sigCur = _g.DATA:read(4)
 	local sigFix
 	if sigCur ~= '\x1BLua' then
 		print('[!] The input file is not a Lua binary script (expected file header: "1B 4C 75 61")')
@@ -1122,7 +1128,7 @@ function modFileHeader(headerTypes)
 			print("[i] Corrupting the file header...")
 			sigFix = '\x5a\x01\x01\x00\x00\x00\x00\x00'
 		elseif  headerTypes == 'LuaFixHeader' then
-			sigCur = DATA:read(8)
+			sigCur = _g.DATA:read(8)
 			if sigCur:sub(3,3) == '\x00' then
 				sigFix = '\x52\x00\x00\x04\x04\x04\x08\x00'
 			else
@@ -1130,21 +1136,21 @@ function modFileHeader(headerTypes)
 			end
 			if sigCur == sigFix then
 				print('[+] This Lua script doesn\'t need any header fix')
-				DATA:close()
-				DATA = nil
+				_g.DATA:close()
+				_g.DATA = nil
 				return
 			else
-				DATA:seek('set') io.writeFile(cfg.fileChoice..'.bak.lua',DATA:read('*a'))
-				print("[✔] Fixed Lua header!\n[+] Modified File: "..cfg.fileChoice..".enc.lua\n[+] Backup File: "..cfg.fileChoice..".bak.lua")
+				_g.DATA:seek('set') io.writeFile(_g.cfg.fileChoice..'.bak.lua',_g.DATA:read('*a'))
+				print("[✔] Fixed Lua header!\n[+] Modified File: ".._g.cfg.fileChoice..".enc.lua\n[+] Backup File: ".._g.cfg.fileChoice..".bak.lua")
 			end
 		end
-		DATA:seek('set',4)
-		DATA:write(sigFix)
+		_g.DATA:seek('set',4)
+		_g.DATA:write(sigFix)
 	end
-	DATA:close()
-	DATA = nil
+	_g.DATA:close()
+	_g.DATA = nil
 end
-function removeBigLasm()
+function _g.removeBigLasm()
 -- Read file, remove the BigLASM, load() and dump() it, and write to output
 	collectgarbage()
 	local defaultByteReplacement = '\4\1\0\0\0'
@@ -1174,7 +1180,7 @@ function removeBigLasm()
 		{'\4\17\39\0\0'..('\72'):rep(1e3),defaultByteReplacement},
 		{'\4\17\39\0\0'..('\30\78\72'):rep(1e3),defaultByteReplacement},
 	}
-	local luacData = io.readFile(cfg.fileChoice..'.enc.lua')
+	local luacData = io.readFile(_g.cfg.fileChoice..'.enc.lua')
 	for j=1,#byteReplace do
 		luacData,r = luacData:gsub(byteReplace[j][1],byteReplace[j][2])
 		print(j.." Applied! replaced: "..r)
@@ -1184,35 +1190,35 @@ function removeBigLasm()
 		print("[!] Failed to reassemble the script, more information:\n\n",err)
 		print("[!] Result script is dumped, but it might not run at all")
 		io.writeFile(
-			cfg.fileChoice..".dump.lua",
+			_g.cfg.fileChoice..".dump.lua",
 			luacData
 		)
 	else
 		io.writeFile(
-			cfg.fileChoice..".enc.lua",
+			_g.cfg.fileChoice..".enc.lua",
 			string.dump(outputBuffer,true,false) -- TODO: do we even need this?
 		)
 	end
 end
-function patchAssembly(patchName) -- make sure DATA is loaded first before running the patcher
+function _g.patchAssembly(patchName) -- make sure DATA is loaded first before running the patcher
 	collectgarbage()
 	local r
-	local patch = deobfPatch[patchName]
+	local patch = _g.cfg.deobfPatch[patchName]
 	local patchType = type(patch)
 	local patchLen = #patch
 	if patchType == 'table' then -- patchset
 		for j=1,patchLen do
 			gg.toast("Applying "..patchName.." patch... "..j.."/"..patchLen)
-			DATA,r = DATA:gsub(patch[j][1],patch[j][2])
+			_g.DATA,r = _g.DATA:gsub(patch[j][1],patch[j][2])
 			print(patchName.." "..j.." Applied! replaced "..r)
 		end
 	elseif patchType == 'function' then -- function (allows blackbox scripts)
-		DATA = patch(DATA)
+		_g.DATA = patch(_g.DATA)
 		print(patchName.." Applied!")
 	end
 end
-function secureRun(opts)
-	cfg.fileChoice = opts.targetScript:gsub(".lua$",'')
+function _g.secureRun(opts)
+	_g.cfg.fileChoice = opts.targetScript:gsub(".lua$",'')
 	gg.toast('[i] Click "__yes__" if you get a popup __about__ corrupted header, __load__ __script__...')
 	local ScriptResult,err = loadfile(opts.targetScript) -- load target script
 	if not ScriptResult or err then -- Error detection
@@ -1238,14 +1244,14 @@ function secureRun(opts)
 
 
 			Repl = {
-				["io"]=table.copy(io),
-				["os"]=table.copy(os),
-				["gg"]=table.copy(gg),
-				["debug"]=table.copy(debug),
-				["string"]=table.copy(string),
-				["math"]=table.copy(math),
-				["table"]=table.copy(table),
-				["utf8"]=table.copy(utf8),
+				["io"]=_g.table_copy(io),
+				["os"]=_g.table_copy(os),
+				["gg"]=_g.table_copy(gg),
+				["debug"]=_g.table_copy(debug),
+				["string"]=_g.table_copy(string),
+				["math"]=_g.table_copy(math),
+				["table"]=_g.table_copy(table),
+				["utf8"]=_g.table_copy(utf8),
 				["print"]=print,
 				["env"]=_ENV,
 				["loadfile"]=loadfile,
@@ -1264,7 +1270,7 @@ function secureRun(opts)
 			local origRef = {} -- original reference, queried using fake function, returns real ones (mostly used by fake debug thing).
 			local ContainmentFiles = {}
 		--TODO: if the said folder not exist, any io.open:write request will crash
-			ContainmentFiles.pwd = cfg.scriptPath.."_ContainmentDir"
+			ContainmentFiles.pwd = _g.cfg.scriptPath.."_ContainmentDir"
 			ContainmentFiles.luascript = ContainmentFiles.pwd..'/'..opts.targetScript:gsub('.+/','')
 			ContainmentFiles.txtfile = ContainmentFiles.pwd.."/ContainedText.txt"
 			ContainmentFiles.dumplogfile = ContainmentFiles.pwd.."/ScriptLog_"..os.date('%d.%m.%Y_%H.%M.%S')..".log"
@@ -1328,10 +1334,6 @@ function secureRun(opts)
 			gg.VERSION_INT = opts.ggVerInt
 		--can't fool us, enc plebs
 			gg.setVisible(true)
-			table.tostring = nil
-			table.copy = nil
-			table.merge = nil
-			table.length = nil
 			io.readFile = nil
 			io.writeFile = nil
 		--string.char = Repl.string.char -- uhh why this here?
@@ -1367,8 +1369,8 @@ function secureRun(opts)
 							end
 						else -- fake
 							ud = {} -- null
-							function ud:write(DATA)
-								print('io.write',DATA,self.file)
+							function ud:write(_g.DATA)
+								print('io.write',_g.DATA,self.file)
 								return self
 							end
 							function ud:close()
@@ -1409,7 +1411,7 @@ function secureRun(opts)
 						["User-Agent"] = "Mozilla/5.0 (Android 10) Gecko/20100101"
 					}
 					data = data or {}
-					if opts.dumpCalls then Repl.print("[Dump] gg.makeRequest("..uri..","..Repl.table.tostring(header)..","..Repl.table.tostring(data)..")") end
+					if opts.dumpCalls then Repl.print("[Dump] gg.makeRequest("..uri..",".._g.table_tostring(header)..",".._g.table_tostring(data)..")") end
 					return {
 						url=uri,
 						requestMethod=nil,
@@ -1741,7 +1743,7 @@ function secureRun(opts)
 						end
 					end
 					local tmp = Repl.gg.multiChoice(items,selected,msg)
-					Repl.print("[gg.multiChoice] > "..tostring(table_tostring(tmp)))
+					Repl.print("[gg.multiChoice] > "..tostring(_g.table_tostring(tmp)))
 					return tmp
 				end
 				gg.searchNumber=function(n,t,e,s,f,o,l)
@@ -1800,7 +1802,7 @@ function secureRun(opts)
 					for i=1,#t do
 						if t[i] then t[i].address = string.format("%x",t[i].address) end
 					end
-					if opts.dumpCalls then Repl.print("[Dump] gg.setValues("..table_tostring(t)..")") end
+					if opts.dumpCalls then Repl.print("[Dump] gg.setValues(".._g.table_tostring(t)..")") end
 					return true
 				end
 				gg.addListItems=function(t)
@@ -1811,7 +1813,7 @@ function secureRun(opts)
 					for i=1,#t do
 						if t[i] then t[i].address = string.format("%x",t[i].address) end
 					end
-					if opts.dumpCalls then Repl.print("[Dump] gg.addListItems("..table_tostring(t)..")") end
+					if opts.dumpCalls then Repl.print("[Dump] gg.addListItems(".._g.table_tostring(t)..")") end
 					return true
 				end
 				gg.editAll=function(v,t)
@@ -1897,8 +1899,8 @@ function secureRun(opts)
 
 		end
 		do -- Prepare another Isolated container to run the script (prevents leaked outside/inside variables)
-			local Repl,opts,CH,cfg = nil,nil,nil,nil -- prevent other value from getting accesed
-			ScriptResult = runExternalLuaCode(ScriptResult,ScriptResult)
+			local Repl,opts = nil,nil -- prevent other value from getting accesed
+			ScriptResult = _g.runExternalLuaCode(ScriptResult,ScriptResult)
 		--also there is an other encryptor checks like `debug.getinfo(1).istailcall` that can be bypassed with `dofile()`
 		end
 	 -- Cleanup some fricked variables
@@ -1917,12 +1919,12 @@ function secureRun(opts)
 	end
 	return print("[+] Clean exit ---\n",ScriptResult or '')
 end
-function runExternalLuaCode(ScriptResult,ScriptWrapper)
+function _g.runExternalLuaCode(ScriptResult,ScriptWrapper)
 	collectgarbage()
 	if ScriptWrapper then ScriptWrapper()ScriptWrapper=nil end
 	return ScriptResult()
 end
-function splitLuaAssembly(input)
+function _g.splitLuaAssembly(input)
 -- TODO - BUG:
 -- instructions failed when:
 -- BLABLABLA
@@ -1959,7 +1961,7 @@ end
 --————————————————————————————————--
 
 --— Dependency & init ————————————--
-table.tostring = function(t,dp)
+_g.table_tostring = function(t,dp)
 	local r,tv = '{\n'
 	dp = dp or 0
 	for k,v in pairs(t) do
@@ -1969,7 +1971,7 @@ table.tostring = function(t,dp)
 			r = r..k..' = '
 		end
 		if tv == 'table' then
-			r = r..table.tostring(v,dp+1)
+			r = r.._g.table_tostring(v,dp+1)
 		elseif tv == 'boolean' or tv == 'number' then
 			r = r..tostring(v)
 		elseif tv == 'function' then
@@ -1981,14 +1983,14 @@ table.tostring = function(t,dp)
 	end
 	return r..('\t'):rep(dp)..'}'
 end
-table.copy = function(t)
+_g.table_copy = function(t)
   local t2={}
   for k,v in pairs(t)do
-		t2[k]=type(v)=="table"and table.copy(v)or v
+		t2[k]=type(v)=="table"and _g.table_copy(v)or v
   end
   return t2
 end
-table.merge = function(...)
+_g.table_merge = function(...)
 	--[[
 		merge 2 tables, just like Object.assign on JS
 		first table will be replaced by new table...
@@ -1997,12 +1999,12 @@ table.merge = function(...)
 	local r = {}
 	for _,t in ipairs{...} do
 		for k,v in pairs(t) do
-			r[k] = type(r[k]) == "table" and table.merge(r[k],v) or v
+			r[k] = type(r[k]) == "table" and _g.table_merge(r[k],v) or v
 		end
 	end
 	return r
 end
-table.length = function(t)
+_g.table_length = function(t)
 --unused for now
 	local c = 0
 	for _ in pairs(t) do
@@ -2029,7 +2031,7 @@ end
 io.writeFile = function(path,buffer,opMode)
 	io.open(path,opMode or 'w'):write(buffer):close()
 end
-pairs_sorted = function(t) -- A hacky way to loop tables in sorted order
+_g.pairs_sorted = function(t) -- A hacky way to loop tables in sorted order
   local i = {} -- make a blank table
   for k in next,t do table.insert(i,k)end -- Deepclone to new blank table (next is slower for sequential tables/array/{1,2,3} but more flexible and saves couple bytes)
   table.sort(i) -- Sort out stuff
@@ -2040,16 +2042,16 @@ pairs_sorted = function(t) -- A hacky way to loop tables in sorted order
     end
   end
 end
-logOutput = function(content,toPrint,toFile,verbosenessLevel,rateLimit)
+_g.logOutput = function(content,toPrint,toFile,verbosenessLevel,rateLimit)
 	toPrint = toPrint or true
 	toFile = toFile or false
 	verbosenessLevel = verbosenessLevel or 6 -- Following Linux printk log rule
 	rateLimit = rateLimit or 1 -- os.clock rule
-	if verbosenessLevel > cfg.logLevel then return end -- return if above an certain set level
+	if verbosenessLevel > _g.cfg.logLevel then return end -- return if above an certain set level
 	if toPrint then print(table.unpack(content)) end -- print if told so
 	if toFile then print('[LogFile]',table.unpack(content)) end -- print if told so
 end
 --
-cfg.fileChoice = cfg.scriptPath
-while true do while not gg.isVisible()do gg.sleep(1e3)end gg.setVisible(false)MENU()end
+_g.cfg.fileChoice = _g.cfg.scriptPath
+while true do while not gg.isVisible()do gg.sleep(1e3)end gg.setVisible(false)_g.MENU()end
 --————————————————————————————————--
