@@ -29,7 +29,8 @@ local enc_wrap_XOR = function(key)
 	local key = {key:byte(0,-1)}
 	return function(str)
 		-- dont encrypt if nothing gets passed
-		if type(str) ~= 'string' or str == '' then return [[""]] end
+		str = tostring(str)
+		if str == '' then return [[""]] end
 		str = {str:byte(0,-1)}
 		for i=1,#str do
 			str[i] = string.char(str[i] ~ key[(i % #key) + 1])
@@ -436,9 +437,9 @@ function MENU()
 	elseif CH == 9 then MENU_about()
 	elseif CH == 10 then
 		gg.setVisible(true)
-		print("[+] Script quit safely.")os.exit()
+		print("[+] Script quit safely.")
+		os.exit()
 	end
-	CH = nil
 end
 function MENU_about()
 	local CH = gg.choice({
@@ -547,27 +548,27 @@ function wrapper_encryptLua()
 		'🧹 Strip annotations (ONLY enable if you encountered an Error and your script has Annotations/Comments --[[like this]])',
 		'🔀️ Encrypt strings (Experimental, possible parsing error could happen)',
 		'🔀️ Encrypt table queries (rarely quirky)',
-		'🔐 ️Password:', -- 5
+		'🔐 ️Password', -- 5
 		'🔐️ Only ask password for once',
-		'🗓️ Script Expiry Date (in YYYYMMDD format)',
+		'🗓️ Expiry Date (in YYYYMMDD format)',
 		'⚙️ GG package name',
-		'⚙️ GG target package name',
-		'⚙️ GG version requirement', -- 10
-		'⚙️ Minimum GG build version requirement',
+		'⚙️ Target package',
+		'⚙️ GG version requirement (blank to not use)', -- 10
+		'⚙️ Minimum GG build version requirement (blank to not use)',
 		'⚙️ Allow newer versions (only works with build number)',
 		'===== ADVANCED OPTIONS: =====\n\n\n\n\n💬️️ Promotional text (eg. Follow, Sub to YT channel), shown in Lua binary', -- 13
-		'💬️️ Ask password:',
-		'💬️️ Wrong password:', -- 15
-		'💬️️ Target Package Invalid:',
-		'💬️️ Expired message:',
-		'💬️️ Denied packages:',
-		'💬️️ Wrong GG Version:',
-		'💬️️ GG Version below:', -- 20
-		'💬️️ Hook Detected:',
-		'💬️️ Illegal Modification:',
-		'💬️️ Log Detected:',
-		'💬️️ Renamed:',
-		'💬️️ Warn Value Peeking:', --25
+		'💬️️ Ask password',
+		'💬️️ Wrong password', -- 15
+		'💬️️ Target Package Invalid',
+		'💬️️ Expired message',
+		'💬️️ Denied packages',
+		'💬️️ Wrong GG Version',
+		'💬️️ GG Version below', -- 20
+		'💬️️ Hook Detected',
+		'💬️️ Illegal Modification',
+		'💬️️ Log Detected',
+		'💬️️ Renamed',
+		'💬️️ Warn Value Peeking', --25
 	},
 	{
 		cfg.fileChoice,-- 1
@@ -835,7 +836,7 @@ function wrapper_injectCodeToLuac()
 
 		-- Combine the script in these orders:
 		-- GG LASM Header, Source, Injected instructions, Target instructions, Target functions, Injected functions, GG LASM Header
-		local DATA =
+		DATA =
 			ggAssemblyHeader[1]..'\n'..
 			DATA[1]..'\n'..
 			INJECTED_CODE[2]..'\n'..
@@ -881,7 +882,7 @@ function wrapper_secureRun()
 		true, -- 3
 		true, -- 4
 		true, -- 5
-		false, -- 6
+		true, -- 6
 		false, -- 7
 		false, -- 8
 		gg.VERSION, -- 9
@@ -1330,6 +1331,7 @@ function secureRun(opts)
 			table.tostring = nil
 			table.copy = nil
 			table.merge = nil
+			table.length = nil
 			io.readFile = nil
 			io.writeFile = nil
 		--string.char = Repl.string.char -- uhh why this here?
@@ -1645,12 +1647,12 @@ function secureRun(opts)
 				end
 				gg.alert=function(t,o1,o2,o3)
 					if not t or t == "" then return end
-					Repl.print('[Dump] gg.alert('..t..','..o1..','..o2..','..o3..')')
+					Repl.print('[Dump] gg.alert("'..t..'","'..o1..'","'..o2..'","'..o3..'")')
 					return Repl.gg.alert(t,o1,o2,o3)
 				end
 				gg.toast=function(text,fastmode)
 					fastmode = fastmode or true
-					Repl.print('[Dump] gg.toast('..text..')')
+					Repl.print('[Dump] gg.toast("'..text..'")')
 					return Repl.gg.toast(text,fastmode)
 				end
 				gg.prompt=function(text,placeholder,types)
@@ -1673,10 +1675,40 @@ function secureRun(opts)
 					return "en_US"
 				end
 				gg.getTargetInfo=function()
-					return nil
+					return {
+						RSS = 0,
+						activities = {},
+						cmdLine = opts.targetPkg,
+						dataDir = '/data/user/0/'..opts.targetPkg,
+						descriptionRes = 0,
+						enabledSetting = 0,
+						firstInstallTime = 0,
+						flags = 0,
+						icon = 0,
+						installer = 'com.android.vending',
+						label = '',
+						labelRes = 0,
+						lastUpdateTime =.0,
+						logo = 0,
+						name = '',
+						nativeLibraryDir = '/data/app/'..opts.targetPkg..'/lib/arm',
+						packageName = opts.targetPkg,
+						pid = 999999,
+						processName = opts.targetPkg,
+						publicSourceDir = '/data/app/'..opts.targetPkg..'/base.apk',
+						sharedUserLabel = 0,
+						sourceDir = '/data/app/'..opts.targetPkg..'/base.apk',
+						targetSdkVersion = 33,
+						taskAffinity = opts.targetPkg,
+						theme = 0,
+						uid = 9999,
+						versionCode = 0,
+						versionName = '',
+						x64 = false,
+					}
 				end
 				gg.getTargetPackage=function()
-					return "com.bruh"
+					return opts.targetPkg
 				end
 				gg.choice=function(items,selected,msg)
 					Repl.print('[gg.choice] '..msg)
@@ -1719,7 +1751,7 @@ function secureRun(opts)
 					s=s or gg.SIGN_EQUAL
 					-- Prevent Log Spam
 					if
-						not (type(t) == "string" and #t < 600 or type(t) == "number") or
+						not (type(t) == "string" and #t < 600) or
 						type(t) ~= "number" or
 						type(e) ~= "boolean" or
 						type(s) ~= "number" or
@@ -1866,9 +1898,7 @@ function secureRun(opts)
 		end
 		do -- Prepare another Isolated container to run the script (prevents leaked outside/inside variables)
 			local Repl,opts,CH,cfg = nil,nil,nil,nil -- prevent other value from getting accesed
-			collectgarbage()
-			if ScriptWrapper then ScriptWrapper()ScriptWrapper=nil end
-			ScriptResult = ScriptResult()
+			ScriptResult = runExternalLuaCode(ScriptResult,ScriptResult)
 		--also there is an other encryptor checks like `debug.getinfo(1).istailcall` that can be bypassed with `dofile()`
 		end
 	 -- Cleanup some fricked variables
@@ -1886,6 +1916,11 @@ function secureRun(opts)
 		collectgarbage()
 	end
 	return print("[+] Clean exit ---\n",ScriptResult or '')
+end
+function runExternalLuaCode(ScriptResult,ScriptWrapper)
+	collectgarbage()
+	if ScriptWrapper then ScriptWrapper()ScriptWrapper=nil end
+	return ScriptResult()
 end
 function splitLuaAssembly(input)
 -- TODO - BUG:
@@ -1937,6 +1972,8 @@ table.tostring = function(t,dp)
 			r = r..table.tostring(v,dp+1)
 		elseif tv == 'boolean' or tv == 'number' then
 			r = r..tostring(v)
+		elseif tv == 'function' then
+			r = r.."funcion()end"
 		else
 			r = r..'"'..v..'"'
 		end
@@ -1964,6 +2001,14 @@ table.merge = function(...)
 		end
 	end
 	return r
+end
+table.length = function(t)
+--unused for now
+	local c = 0
+	for _ in pairs(t) do
+		c = c + 1
+	end
+	return c
 end
 if not gg.sleep then
 	gg.sleep = function(ms)
